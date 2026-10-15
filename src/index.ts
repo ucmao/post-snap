@@ -7,14 +7,23 @@ import { healthRoutes } from './routes/health.js';
 import { extractRoutes } from './routes/extract.js';
 
 async function bootstrap() {
+  let loggerConfig: any = true;
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      loggerConfig = {
+        level: 'info',
+        transport: {
+          target: 'pino-pretty',
+          options: { colorize: true }
+        }
+      };
+    } catch {
+      loggerConfig = true;
+    }
+  }
+
   const server = Fastify({
-    logger: {
-      level: 'info',
-      transport: process.env.NODE_ENV !== 'production' ? {
-        target: 'pino-pretty',
-        options: { colorize: true }
-      } : undefined
-    },
+    logger: loggerConfig,
     bodyLimit: 10 * 1024 * 1024, // 10MB
   });
 
