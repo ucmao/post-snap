@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  article-extractor:
+  post-snap:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: article-extractor-api
+    container_name: post-snap
     restart: unless-stopped
     ports:
       - "3000:3000"

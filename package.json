@@ -1,7 +1,7 @@
 {
-  "name": "article-extractor-api",
+  "name": "post-snap",
   "version": "1.0.0",
-  "description": "Universal article content and image extraction API for rich-text editors (WeChat Official Accounts, Zhihu, Juejin, CSDN, and generic web articles).",
+  "description": "PostSnap - Universal article content and image snapshot/extractor engine for rich-text editors.",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {

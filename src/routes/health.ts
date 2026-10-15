@@ -11,14 +11,14 @@ export async function healthRoutes(fastify: FastifyInstance) {
 
   fastify.get('/', async () => {
     return {
-      name: 'article-extractor-api',
+      name: 'post-snap',
       version: '1.0.0',
-      description: 'Universal Article Content and Image Extraction API for Rich-Text Editors',
+      description: 'PostSnap - Universal Article Content and Image Snapshot/Extractor Engine',
       endpoints: {
-        extract: 'POST /api/v1/extract',
+        extract: 'POST /api/v1/extract (or GET /api/v1/extract?url=...)',
         health: 'GET /health',
       },
-      docs: 'https://github.com/your-org/article-extractor-api',
+      docs: 'https://github.com/your-org/post-snap',
     };
   });
 }
