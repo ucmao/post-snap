@@ -1,0 +1,198 @@
+[
+  {
+    "id": "wechat",
+    "platform": "微信公众号",
+    "category": "自媒体/主流平台",
+    "url": "https://mp.weixin.qq.com/s/23p2uY833xO6X2CwMsDRyg",
+    "description": "特斯拉中国上架新车文章（带微信多图与排版）"
+  },
+  {
+    "id": "toutiao",
+    "platform": "今日头条",
+    "category": "自媒体/主流平台",
+    "url": "https://www.toutiao.com/article/7696077270175334947/?log_from=f0a28b43cc6fe8_1792037562844",
+    "description": "今日头条文章（带字节反爬，经移动端SSR穿透）"
+  },
+  {
+    "id": "cnblogs",
+    "platform": "博客园",
+    "category": "技术社区",
+    "url": "https://www.cnblogs.com/vivotech/p/23311559",
+    "description": "vivo官方团队在博客园发布的技术干货"
+  },
+  {
+    "id": "juejin",
+    "platform": "稀土掘金",
+    "category": "技术社区",
+    "url": "https://juejin.cn/post/7637856870833635343",
+    "description": "掘金社区热门前端技术文章"
+  },
+  {
+    "id": "csdn",
+    "platform": "CSDN",
+    "category": "技术社区",
+    "url": "https://blog.csdn.net/blogdevteam/article/details/126135357",
+    "description": "CSDN官方技术博文"
+  },
+  {
+    "id": "segmentfault",
+    "platform": "SegmentFault 思否",
+    "category": "技术社区",
+    "url": "https://segmentfault.com/a/1190000047933033",
+    "description": "SegmentFault 开发者专栏文章"
+  },
+  {
+    "id": "oschina",
+    "platform": "开源中国 (OSChina)",
+    "category": "技术社区",
+    "url": "https://my.oschina.net/u/593425/blog/19777378",
+    "description": "开源中国开发者技术博客"
+  },
+  {
+    "id": "51cto",
+    "platform": "51CTO",
+    "category": "技术社区",
+    "url": "https://www.51cto.com/article/858148.html",
+    "description": "51CTO精选技术报道"
+  },
+  {
+    "id": "sspai",
+    "platform": "少数派",
+    "category": "数字生活/媒体",
+    "url": "https://sspai.com/post/79543",
+    "description": "少数派深度效率数码评测文章"
+  },
+  {
+    "id": "36kr",
+    "platform": "36氪",
+    "category": "科技媒体",
+    "url": "https://36kr.com/p/4026620885782912",
+    "description": "36氪商业深度报道（AI短剧）"
+  },
+  {
+    "id": "ithome",
+    "platform": "IT之家",
+    "category": "科技媒体",
+    "url": "https://www.ithome.com/0/755/123.htm",
+    "description": "IT之家资讯与技术评测"
+  },
+  {
+    "id": "tencent_cloud",
+    "platform": "腾讯云开发者社区",
+    "category": "云厂商社区",
+    "url": "https://cloud.tencent.com/developer/article/2391234",
+    "description": "腾讯云开发者社区技术博文"
+  },
+  {
+    "id": "aliyun",
+    "platform": "阿里云开发者社区",
+    "category": "云厂商社区",
+    "url": "https://developer.aliyun.com/article/1451234",
+    "description": "阿里云官方开发者博客"
+  },
+  {
+    "id": "huaweicloud",
+    "platform": "华为云开发者社区",
+    "category": "云厂商社区",
+    "url": "https://bbs.huaweicloud.com/blogs/423123",
+    "description": "华为云技术专栏"
+  },
+  {
+    "id": "infoq",
+    "platform": "极客邦 InfoQ",
+    "category": "技术媒体",
+    "url": "https://www.infoq.cn/article/6iRATYfkqF7aITPaFR2R",
+    "description": "InfoQ Anthropic版本控制系统报道"
+  },
+  {
+    "id": "imooc",
+    "platform": "慕课网手记",
+    "category": "教育/技术社区",
+    "url": "https://www.imooc.com/article/345123",
+    "description": "慕课网技术讲师手记文章"
+  },
+  {
+    "id": "jianshu",
+    "platform": "简书",
+    "category": "自媒体/写作平台",
+    "url": "https://www.jianshu.com/p/b4065a9dbe7a",
+    "description": "简书用户原创故事与随笔"
+  },
+  {
+    "id": "baijiahao",
+    "platform": "百度百家号",
+    "category": "自媒体/主流平台",
+    "url": "https://baijiahao.baidu.com/s?id=1877123448225535074",
+    "description": "百度短剧入选微短剧项目报道"
+  },
+  {
+    "id": "sohu",
+    "platform": "搜狐号",
+    "category": "自媒体/门户网站",
+    "url": "https://www.sohu.com/a/1087663110_120146415",
+    "description": "搜狐号生活随笔文章"
+  },
+  {
+    "id": "qq_news",
+    "platform": "腾讯新闻",
+    "category": "自媒体/门户网站",
+    "url": "https://news.qq.com/rain/a/20261013A0DYHM00",
+    "description": "腾讯新闻潮涌荆楚深度报道"
+  },
+  {
+    "id": "thepaper",
+    "platform": "澎湃新闻",
+    "category": "主流媒体",
+    "url": "https://www.thepaper.cn/newsDetail_forward_26678912",
+    "description": "澎湃深度调查图文报道"
+  },
+  {
+    "id": "douban",
+    "platform": "豆瓣日记/专栏",
+    "category": "文化社区",
+    "url": "https://www.douban.com/note/814362706/?type=collect&_i=2040316WfxnDxp",
+    "description": "豆瓣用户日记功能研究"
+  },
+  {
+    "id": "huxiu",
+    "platform": "虎嗅网",
+    "category": "科技媒体",
+    "url": "https://www.huxiu.com/article/4896859.html",
+    "description": "虎嗅网吉利汽车商业报道"
+  },
+  {
+    "id": "github_blog",
+    "platform": "GitHub Blog",
+    "category": "海外科技",
+    "url": "https://github.blog/news-insights/product-news/github-copilot-workspace/",
+    "description": "GitHub官方技术产品博客"
+  },
+  {
+    "id": "wordpress_blog",
+    "platform": "独立博客 (WordPress)",
+    "category": "独立站点",
+    "url": "https://wordpress.org/news/2024/03/wordpress-6-5-release-candidate-3/",
+    "description": "WordPress官方新闻博客"
+  },
+  {
+    "id": "zhihu",
+    "platform": "知乎专栏",
+    "category": "问答社区",
+    "url": "https://zhuanlan.zhihu.com/p/2093348766606702013",
+    "description": "知乎深度专栏博文"
+  },
+  {
+    "id": "weibo_article",
+    "platform": "微博头条文章",
+    "category": "社交媒体",
+    "url": "https://weibo.com/ttarticle/p/show?id=2309405354237688676758",
+    "description": "微博认证创作者长文章"
+  },
+  {
+    "id": "wangyi",
+    "platform": "网易号",
+    "category": "自媒体/门户网站",
+    "url": "https://www.163.com/auto/article/C09L73QM00084KIF.html",
+    "description": "网易汽车专栏报道"
+  }
+]

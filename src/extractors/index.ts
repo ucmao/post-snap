@@ -4,6 +4,10 @@ import { ZhihuExtractor } from './zhihu.js';
 import { JuejinExtractor } from './juejin.js';
 import { CSDNExtractor } from './csdn.js';
 import { ToutiaoExtractor } from './toutiao.js';
+import { Kr36Extractor } from './36kr.js';
+import { DoubanExtractor } from './douban.js';
+import { InfoQExtractor } from './infoq.js';
+import { OSChinaExtractor } from './oschina.js';
 import { GeneralExtractor } from './general.js';
 
 const specializedExtractors: IExtractor[] = [
@@ -12,6 +16,10 @@ const specializedExtractors: IExtractor[] = [
   new JuejinExtractor(),
   new CSDNExtractor(),
   new ToutiaoExtractor(),
+  new Kr36Extractor(),
+  new DoubanExtractor(),
+  new InfoQExtractor(),
+  new OSChinaExtractor(),
 ];
 
 const generalExtractor = new GeneralExtractor();

@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import got from 'got';
+import { gotScraping } from 'got-scraping';
 import * as cheerio from 'cheerio';
 import { ExtractOptions, ApiResponse, ExtractedArticle, ExtractedImage } from '../types/index.js';
 import { dispatchExtract } from '../extractors/index.js';
@@ -30,12 +30,13 @@ async function executeExtraction(options: ExtractOptions, log: any): Promise<Api
 
   const targetUrl = url.trim();
 
-  // 1. Fetch remote article HTML
-  const response = await got(targetUrl, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+  // 1. Fetch remote article HTML with real browser fingerprints
+  const response = await gotScraping({
+    url: targetUrl,
+    headerGeneratorOptions: {
+      browsers: [{ name: 'chrome', minVersion: 120 }],
+      devices: ['desktop'],
+      locales: ['zh-CN', 'zh'],
     },
     timeout: { request: config.requestTimeout },
     retry: { limit: 1 },
