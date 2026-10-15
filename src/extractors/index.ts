@@ -3,6 +3,7 @@ import { WechatExtractor } from './wechat.js';
 import { ZhihuExtractor } from './zhihu.js';
 import { JuejinExtractor } from './juejin.js';
 import { CSDNExtractor } from './csdn.js';
+import { ToutiaoExtractor } from './toutiao.js';
 import { GeneralExtractor } from './general.js';
 
 const specializedExtractors: IExtractor[] = [
@@ -10,6 +11,7 @@ const specializedExtractors: IExtractor[] = [
   new ZhihuExtractor(),
   new JuejinExtractor(),
   new CSDNExtractor(),
+  new ToutiaoExtractor(),
 ];
 
 const generalExtractor = new GeneralExtractor();
