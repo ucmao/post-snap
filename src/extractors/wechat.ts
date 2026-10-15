@@ -51,8 +51,12 @@ export class WechatExtractor extends BaseExtractor {
     // CRITICAL: Fix WeChat lazy-loaded images (data-src -> src)
     contentDom.find('img').each((_, el) => {
       const $img = $(el);
-      const realSrc = $img.attr('data-src') || $img.attr('src');
+      let realSrc = $img.attr('data-src') || $img.attr('src');
       if (realSrc) {
+        // Upgrade image resolution from /640? or /300? to lossless master /0?
+        if (realSrc.includes('qpic.cn')) {
+          realSrc = realSrc.replace(/\/(?:640|300|0)\?/, '/0?');
+        }
         $img.attr('src', realSrc);
         $img.removeAttr('data-src');
         $img.removeAttr('data-cropselx1');
@@ -73,8 +77,12 @@ export class WechatExtractor extends BaseExtractor {
       const galleryImages: string[] = [];
       let m;
       while ((m = picRegex.exec(html)) !== null) {
-        if (!galleryImages.includes(m[1])) {
-          galleryImages.push(m[1]);
+        let rawUrl = m[1];
+        if (rawUrl.includes('qpic.cn')) {
+          rawUrl = rawUrl.replace(/\/(?:640|300|0)\?/, '/0?');
+        }
+        if (!galleryImages.includes(rawUrl)) {
+          galleryImages.push(rawUrl);
         }
       }
 

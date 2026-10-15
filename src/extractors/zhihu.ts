@@ -22,7 +22,16 @@ export class ZhihuExtractor extends BaseExtractor {
     // Author
     const author = $('.AuthorInfo-name .UserLink-link').first().text().trim() ||
                    this.getMetaContent($, 'author') ||
-                   '';
+                   '知乎答主';
+
+    // Publish Time
+    let publishTime = this.getMetaContent($, 'article:published_time') ||
+                      $('meta[itemprop="datePublished"]').attr('content') ||
+                      $('.ContentItem-time').first().text().replace(/编辑于|发布于/, '').trim();
+    if (!publishTime) {
+      const match = html.match(/"datePublished":\s*"([^"]+)"/);
+      if (match) publishTime = match[1];
+    }
 
     // Cover Image
     const coverImage = $('.TitleImage').attr('src') ||
@@ -57,6 +66,7 @@ export class ZhihuExtractor extends BaseExtractor {
     return {
       title,
       author,
+      publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
       platform: 'Zhihu',

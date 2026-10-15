@@ -20,7 +20,7 @@
     "image-proxy",
     "api"
   ],
-  "author": "open-source",
+  "author": "ucmao",
   "license": "MIT",
   "dependencies": {
     "@fastify/cors": "^10.0.1",
@@ -34,7 +34,8 @@
     "jsdom": "^26.0.0",
     "mime-types": "^2.1.35",
     "sanitize-html": "^2.14.0",
-    "turndown": "^7.2.0"
+    "turndown": "^7.2.0",
+    "turndown-plugin-gfm": "^1.0.2"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",

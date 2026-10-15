@@ -19,7 +19,15 @@ export class JuejinExtractor extends BaseExtractor {
 
     const author = $('.author-name .name').first().text().trim() ||
                    this.getMetaContent($, 'author') ||
-                   '';
+                   '掘金创作者';
+
+    let publishTime = $('time.time').first().text().trim() ||
+                      $('time').first().attr('datetime') ||
+                      this.getMetaContent($, 'article:published_time');
+    if (!publishTime) {
+      const timeMatch = html.match(/"datePublished":\s*"([^"]+)"/);
+      if (timeMatch) publishTime = timeMatch[1];
+    }
 
     const coverImage = this.getMetaContent($, 'og:image');
 
@@ -44,9 +52,10 @@ export class JuejinExtractor extends BaseExtractor {
     return {
       title,
       author,
+      publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
-      platform: 'Juejin',
+      platform: '稀土掘金',
     };
   }
 }

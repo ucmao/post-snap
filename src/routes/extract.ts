@@ -19,6 +19,7 @@ async function executeExtraction(options: ExtractOptions, log: any): Promise<Api
     image_storage = config.defaultImageStorage,
     format = 'both',
     clean_styles = false,
+    markdown_header = true,
   } = options;
 
   if (!url || typeof url !== 'string' || !/^https?:\/\//i.test(url.trim())) {
@@ -31,28 +32,32 @@ async function executeExtraction(options: ExtractOptions, log: any): Promise<Api
   const targetUrl = url.trim();
 
   // 1. Fetch remote article HTML with real browser fingerprints
-  const customHeaders: Record<string, string> = {};
-  if (targetUrl.includes('zhihu.com') && config.zhihuCookie) {
-    customHeaders['cookie'] = config.zhihuCookie;
-  } else if (targetUrl.includes('douban.com') && config.doubanCookie) {
-    customHeaders['cookie'] = config.doubanCookie;
-  } else if (targetUrl.includes('51cto.com') && config.cto51Cookie) {
-    customHeaders['cookie'] = config.cto51Cookie;
+  let rawHtml = '';
+  const isDirectApi = targetUrl.includes('tieba.baidu.com') ||
+                      targetUrl.includes('hnr.cn/') ||
+                      targetUrl.includes('hntv.tv/');
+
+  if (!isDirectApi) {
+    const customHeaders: Record<string, string> = {};
+    if (targetUrl.includes('zhihu.com') && config.zhihuCookie) {
+      customHeaders['cookie'] = config.zhihuCookie;
+    }
+
+    const response = await gotScraping({
+      url: targetUrl,
+      headers: customHeaders,
+      headerGeneratorOptions: {
+        browsers: [{ name: 'chrome', minVersion: 120 }],
+        devices: ['desktop'],
+        locales: ['zh-CN', 'zh'],
+      },
+      timeout: { request: config.requestTimeout },
+      retry: { limit: 1 },
+      throwHttpErrors: false,
+    });
+
+    rawHtml = response.body;
   }
-
-  const response = await gotScraping({
-    url: targetUrl,
-    headers: customHeaders,
-    headerGeneratorOptions: {
-      browsers: [{ name: 'chrome', minVersion: 120 }],
-      devices: ['desktop'],
-      locales: ['zh-CN', 'zh'],
-    },
-    timeout: { request: config.requestTimeout },
-    retry: { limit: 1 },
-  });
-
-  const rawHtml = response.body;
 
   // 2. Dispatch to appropriate extractor
   const rawArticle = await dispatchExtract(targetUrl, rawHtml);
@@ -89,7 +94,15 @@ async function executeExtraction(options: ExtractOptions, log: any): Promise<Api
   const needHtml = format === 'html' || format === 'both';
   const needMarkdown = format === 'markdown' || format === 'both';
 
-  const markdownContent = needMarkdown ? convertHtmlToMarkdown(finalCleanHtml) : undefined;
+  const markdownMeta = markdown_header !== false ? {
+    title: rawArticle.title,
+    author: rawArticle.author,
+    publish_time: rawArticle.publish_time,
+    source_url: targetUrl,
+    platform: rawArticle.platform,
+  } : undefined;
+
+  const markdownContent = needMarkdown ? convertHtmlToMarkdown(finalCleanHtml, markdownMeta) : undefined;
 
   // Calculate plain text and word count
   const $text = cheerio.load(finalCleanHtml, null, false);
@@ -150,6 +163,7 @@ export async function extractRoutes(fastify: FastifyInstance) {
 
       const uploadImages = query.upload_images === 'true' || query.upload_images === '1';
       const cleanStyles = query.clean_styles === 'true' || query.clean_styles === '1';
+      const markdownHeader = query.markdown_header !== 'false' && query.markdown_header !== '0';
       const format = (query.format as any) || 'both';
       const imageStorage = (query.image_storage as any) || config.defaultImageStorage;
 
@@ -157,6 +171,7 @@ export async function extractRoutes(fastify: FastifyInstance) {
         url: targetUrl || '',
         upload_images: uploadImages,
         clean_styles: cleanStyles,
+        markdown_header: markdownHeader,
         format,
         image_storage: imageStorage,
       };

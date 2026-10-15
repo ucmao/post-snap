@@ -8,8 +8,126 @@ export class GeneralExtractor extends BaseExtractor {
   name = 'general';
 
   canHandle(_url: string): boolean {
-    // Fallback handler for all URLs
     return true;
+  }
+
+  private cleanTitle(title: string): string {
+    if (!title) return '未命名文章';
+    return title
+      .replace(/\s*[-_|_]\s*(东方财富网|澎湃新闻.*|腾讯新闻|ZAKER.*|搜狐.*|新浪.*|中华网.*|少数派|IT之家|虎嗅.*|网易.*|博客园|思否|SegmentFault|CSDN.*|知乎.*|36氪.*|GitHub Blog|WordPress.*)$/i, '')
+      .replace(/\s*[-_|_]\s*[\u4e00-\u9fa5]{2,10}(网|号|客户端|新闻|社区|博客|专栏)$/i, '')
+      .trim();
+  }
+
+  private detectAuthor($: cheerio.CheerioAPI, html: string): string {
+    // 1. Meta check
+    let author = this.getMetaContent($, 'author') ||
+                 this.getMetaContent($, 'article:author') ||
+                 this.getMetaContent($, 'og:article:author') ||
+                 this.getMetaContent($, 'source') ||
+                 this.getMetaContent($, 'media_name') ||
+                 '';
+
+    // Discard invalid/code authors like "#5434", "admin", "null"
+    if (author && (author.startsWith('#') || /^\d+$/.test(author) || /^(admin|root|null|undefined)$/i.test(author))) {
+      author = '';
+    }
+
+    // 2. DOM selector check
+    if (!author) {
+      const candidates = [
+        '.author', '.author-name', '.art_author', '.writer', '.user-name',
+        '.ntpl_header_author', '.source', '.news_source', '.publisher',
+        '.editor', '.origin', '.chan_newsInfo', '#chan_newsInfo',
+        '.news_about', '.infos', '.data'
+      ];
+      for (const sel of candidates) {
+        const text = $(sel).first().text().replace(/\s+/g, ' ').trim();
+        if (text) {
+          // Look for "来源：XXX" or "作者：XXX" pattern
+          const match = text.match(/(?:来源|作者|文|编辑)[:：\s]+([^\s\|·;,，]{2,20})/);
+          if (match) {
+            author = match[1].trim();
+            break;
+          } else if (text.length >= 2 && text.length <= 20 && !/\d{4}/.test(text)) {
+            author = text;
+            break;
+          }
+        }
+      }
+    }
+
+    // 3. Fallback regex in HTML
+    if (!author) {
+      const m = html.match(/(?:来源|作者|文|撰文)[:：\s]+["']?([^\s"'\n<>\|·;,，]{2,20})/);
+      if (m && !/^(本站|网络|原创|转载)$/.test(m[1].trim())) {
+        author = m[1].trim();
+      }
+    }
+
+    return author.replace(/^(作者|来源|责任编辑|编辑)[:：\s]*/, '').trim();
+  }
+
+  private detectPublishTime($: cheerio.CheerioAPI, html: string): string | undefined {
+    // 1. Meta check
+    let date = this.getMetaContent($, 'article:published_time') ||
+               this.getMetaContent($, 'og:release_date') ||
+               this.getMetaContent($, 'pubdate') ||
+               this.getMetaContent($, 'publishdate') ||
+               this.getMetaContent($, 'publish_time') ||
+               this.getMetaContent($, 'date') ||
+               $('time').attr('datetime') ||
+               $('time').text().trim();
+
+    if (date && /\d{4}/.test(date)) {
+      return date.trim();
+    }
+
+    // 2. DOM selectors for date/time
+    const dateSelectors = [
+      '.time', '.date', '.pub_date', '.publish-time', '.post-time',
+      '.news_about', '.infos', '#chan_newsInfo', '.article_info',
+      '.header_about', '.time-source', '.entry-date'
+    ];
+    for (const sel of dateSelectors) {
+      const text = $(sel).first().text().trim();
+      const match = text.match(/202\d[-/.年][01]?\d[-/.月][0-3]?\d([日\s]+[0-2]\d:[0-5]\d(:[0-5]\d)?)?/);
+      if (match) {
+        return match[0].trim();
+      }
+    }
+
+    // 3. Regex on whole HTML
+    const globalMatch = html.match(/202\d-[01]\d-[0-3]\d(\s+[0-2]\d:[0-5]\d(:[0-5]\d)?)?/);
+    if (globalMatch) {
+      return globalMatch[0].trim();
+    }
+
+    return undefined;
+  }
+
+  private detectPlatform(url: string): string {
+    const u = url.toLowerCase();
+    if (u.includes('eastmoney.com')) return '东方财富网';
+    if (u.includes('163.com/money')) return '网易财经';
+    if (u.includes('163.com')) return '网易号';
+    if (u.includes('zhibo8.com')) return '直播吧';
+    if (u.includes('cyzone.cn')) return '创业邦';
+    if (u.includes('qianzhan.com')) return '前瞻经济学人';
+    if (u.includes('myzaker.com')) return 'ZAKER';
+    if (u.includes('thepaper.cn')) return '澎湃新闻';
+    if (u.includes('k.sina.com.cn') || u.includes('sina.com.cn')) return '新浪看点';
+    if (u.includes('china.com')) return '中华网';
+    if (u.includes('cnblogs.com')) return '博客园';
+    if (u.includes('segmentfault.com')) return 'SegmentFault 思否';
+    if (u.includes('sspai.com')) return '少数派';
+    if (u.includes('ithome.com')) return 'IT之家';
+    if (u.includes('baijiahao.baidu.com')) return '百度百家号';
+    if (u.includes('qq.com')) return '腾讯新闻';
+    if (u.includes('huxiu.com')) return '虎嗅网';
+    if (u.includes('github.blog')) return 'GitHub Blog';
+    if (u.includes('wordpress.org')) return '独立博客 (WordPress)';
+    return '网页文章';
   }
 
   async extract(url: string, html: string): Promise<RawExtractedArticle> {
@@ -22,53 +140,82 @@ export class GeneralExtractor extends BaseExtractor {
     const parsed = reader.parse();
     const $ = cheerio.load(html);
 
-    const title = parsed?.title ||
-                  $('h1').first().text().trim() ||
-                  this.getMetaContent($, 'og:title') ||
-                  $('title').text().trim() ||
-                  '未命名文章';
+    // 1. Title
+    const rawTitle = parsed?.title ||
+                     $('h1').first().text().trim() ||
+                     this.getMetaContent($, 'og:title') ||
+                     $('title').text().trim() ||
+                     '未命名文章';
+    const title = this.cleanTitle(rawTitle);
 
-    const author = parsed?.byline ||
-                   this.getMetaContent($, 'author') ||
-                   '';
+    // 2. Author
+    let author = this.detectAuthor($, html) || parsed?.byline || '';
 
+    // 3. Publish Time
+    const publishTime = this.detectPublishTime($, html);
+
+    // 4. Cover Image
     const coverImage = this.getMetaContent($, 'og:image') ||
                        this.getMetaContent($, 'twitter:image');
 
+    // 5. Content
     let contentHtml = parsed?.content || '';
 
-    // If Readability fails or returns empty, fallback to article/body tags
-    if (!contentHtml || contentHtml.trim().length < 50) {
-      const fallbackTarget = $('article').first().length > 0 ? $('article').first() : $('main').first();
-      if (fallbackTarget.length > 0) {
-        this.removeNoiseElements($, fallbackTarget);
-        contentHtml = fallbackTarget.html() || '';
+    // If Readability returns too little content, fallback to specific semantic tags
+    if (!contentHtml || contentHtml.trim().length < 80) {
+      const candidates = [
+        '[node-type="contentBody"]',
+        '.article_bd__detail',
+        '.article-content',
+        '.entry-content',
+        '#article-content',
+        '#article_content',
+        '.post-content',
+        'article',
+        'main'
+      ];
+      for (const sel of candidates) {
+        const target = $(sel).first();
+        if (target.length > 0 && target.text().trim().length > 80) {
+          this.removeNoiseElements($, target);
+          contentHtml = target.html() || '';
+          break;
+        }
       }
     }
 
-    // Fix lazy loading images with data-src, data-original, etc.
+    // 6. Clean lazy images & convert data-src to src
     const $content = cheerio.load(contentHtml, null, false);
     $content('img').each((_, el) => {
       const $img = $content(el);
       const realSrc = $img.attr('data-src') ||
                       $img.attr('data-original') ||
                       $img.attr('data-actualsrc') ||
+                      $img.attr('data-lazy-src') ||
+                      $img.attr('data-echo') ||
+                      $img.attr('data-url') ||
                       $img.attr('src');
-      if (realSrc) {
-        $img.attr('src', realSrc);
-        $img.removeAttr('data-src');
-        $img.removeAttr('data-original');
+      if (realSrc && !realSrc.startsWith('data:image/svg') && realSrc.length > 5) {
+        $img.attr('src', realSrc.startsWith('//') ? 'https:' + realSrc : realSrc);
       }
+      $img.removeAttr('data-src');
+      $img.removeAttr('data-original');
+      $img.removeAttr('data-actualsrc');
+      $img.removeAttr('data-lazy-src');
     });
+
+    // 7. Remove common noise like feedback/share buttons
+    $content('.share-box, .comment-box, .ad-box, .advertisement, .qr-code, #backsohucom').remove();
 
     contentHtml = $content.html() || '';
 
     return {
       title,
       author,
+      publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
-      platform: 'Generic Web Page',
+      platform: this.detectPlatform(url),
     };
   }
 }

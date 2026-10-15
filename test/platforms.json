@@ -7,11 +7,102 @@
     "description": "特斯拉中国上架新车文章（带微信多图与排版）"
   },
   {
+    "id": "wechat_fashion",
+    "platform": "微信公众号 (图文)",
+    "category": "自媒体/主流平台",
+    "url": "https://mp.weixin.qq.com/s/12geftdkfKFXs_JXSwX_Tg",
+    "description": "王嘉尔与陈冠希联名设计图文报道（多达18张高清配图）"
+  },
+  {
     "id": "toutiao",
     "platform": "今日头条",
     "category": "自媒体/主流平台",
-    "url": "https://www.toutiao.com/article/7696077270175334947/?log_from=f0a28b43cc6fe8_1792037562844",
-    "description": "今日头条文章（带字节反爬，经移动端SSR穿透）"
+    "url": "https://www.toutiao.com/article/7696728076901745195/?log_from=44fd0787e7e92_1792043065603",
+    "description": "今日头条社会时事报道（带字节反爬，经移动端SSR穿透）"
+  },
+  {
+    "id": "tieba",
+    "platform": "百度贴吧",
+    "category": "论坛社区",
+    "url": "https://tieba.baidu.com/p/11102329182?fr=frs",
+    "description": "百度贴吧游戏讨论主楼（穿透百度安全验证，获取主楼图文）"
+  },
+  {
+    "id": "xueqiu",
+    "platform": "雪球",
+    "category": "财经社区",
+    "url": "https://www.xueqiu.com/1435245349/403225522",
+    "description": "雪球投资大V行业定增深度分析帖"
+  },
+  {
+    "id": "eastmoney",
+    "platform": "东方财富网",
+    "category": "财经门户",
+    "url": "https://finance.eastmoney.com/a/202610083889608055.html",
+    "description": "东方财富网A股连板股行情与固态电池板块深度复盘"
+  },
+  {
+    "id": "netease_money",
+    "platform": "网易财经",
+    "category": "财经门户",
+    "url": "https://www.163.com/money/article/L99APU8H00258105.html?clickfrom=w_yw_money",
+    "description": "外资企业的中国生意深度商业报道"
+  },
+  {
+    "id": "zhibo8",
+    "platform": "直播吧",
+    "category": "体育媒体",
+    "url": "https://news.zhibo8.com/zuqiu/2026-10-15/match2272603date2026vnative.htm",
+    "description": "欧冠焦点战赛报（包含32张超高密度动图与赛事照片）"
+  },
+  {
+    "id": "cyzone",
+    "platform": "创业邦",
+    "category": "科技媒体/创投",
+    "url": "https://www.cyzone.cn/article/849109.html",
+    "description": "创业邦商业深度报道：问界分合风波"
+  },
+  {
+    "id": "qianzhan",
+    "platform": "前瞻经济学人",
+    "category": "智库/科技媒体",
+    "url": "https://t.qianzhan.com/daka/detail/160408-d663101c.html",
+    "description": "前瞻大咖近万字深度专访：技术创业请CTO不如找产品经理"
+  },
+  {
+    "id": "zaker",
+    "platform": "ZAKER",
+    "category": "移动资讯",
+    "url": "https://app.myzaker.com/news/article.php?pk=6ad0377fb15ec053eb51a409",
+    "description": "ZAKER移动端热门资讯图文"
+  },
+  {
+    "id": "thepaper",
+    "platform": "澎湃新闻",
+    "category": "主流媒体",
+    "url": "https://www.thepaper.cn/newsDetail_forward_34255603",
+    "description": "澎湃新闻时事热点图文深度报道"
+  },
+  {
+    "id": "sina_kandian",
+    "platform": "新浪看点",
+    "category": "自媒体/门户网站",
+    "url": "https://k.sina.com.cn/article_7879776328_1d5abd84806802ds98.html",
+    "description": "新浪看点创作者文章"
+  },
+  {
+    "id": "china_news",
+    "platform": "中华网",
+    "category": "主流媒体/门户",
+    "url": "https://news.china.com/socialgd/10000169/20261015/49795650_all.html",
+    "description": "中华网社会热点新闻与高清配图"
+  },
+  {
+    "id": "daxiang_news",
+    "platform": "大象新闻 (映象网)",
+    "category": "主流媒体/地方门户",
+    "url": "http://www.hnr.cn/isyds/article/1/1985628504705925122?from=yxhome",
+    "description": "河南广电大象新闻（SPA前端单页，自适应底层CMS接口解析）"
   },
   {
     "id": "cnblogs",
@@ -49,13 +140,6 @@
     "description": "开源中国开发者技术博客"
   },
   {
-    "id": "51cto",
-    "platform": "51CTO",
-    "category": "技术社区",
-    "url": "https://www.51cto.com/article/858148.html",
-    "description": "51CTO精选技术报道"
-  },
-  {
     "id": "sspai",
     "platform": "少数派",
     "category": "数字生活/媒体",
@@ -77,48 +161,6 @@
     "description": "IT之家资讯与技术评测"
   },
   {
-    "id": "tencent_cloud",
-    "platform": "腾讯云开发者社区",
-    "category": "云厂商社区",
-    "url": "https://cloud.tencent.com/developer/article/2391234",
-    "description": "腾讯云开发者社区技术博文"
-  },
-  {
-    "id": "aliyun",
-    "platform": "阿里云开发者社区",
-    "category": "云厂商社区",
-    "url": "https://developer.aliyun.com/article/1451234",
-    "description": "阿里云官方开发者博客"
-  },
-  {
-    "id": "huaweicloud",
-    "platform": "华为云开发者社区",
-    "category": "云厂商社区",
-    "url": "https://bbs.huaweicloud.com/blogs/423123",
-    "description": "华为云技术专栏"
-  },
-  {
-    "id": "infoq",
-    "platform": "极客邦 InfoQ",
-    "category": "技术媒体",
-    "url": "https://www.infoq.cn/article/6iRATYfkqF7aITPaFR2R",
-    "description": "InfoQ Anthropic版本控制系统报道"
-  },
-  {
-    "id": "imooc",
-    "platform": "慕课网手记",
-    "category": "教育/技术社区",
-    "url": "https://www.imooc.com/article/345123",
-    "description": "慕课网技术讲师手记文章"
-  },
-  {
-    "id": "jianshu",
-    "platform": "简书",
-    "category": "自媒体/写作平台",
-    "url": "https://www.jianshu.com/p/b4065a9dbe7a",
-    "description": "简书用户原创故事与随笔"
-  },
-  {
     "id": "baijiahao",
     "platform": "百度百家号",
     "category": "自媒体/主流平台",
@@ -136,15 +178,8 @@
     "id": "qq_news",
     "platform": "腾讯新闻",
     "category": "自媒体/门户网站",
-    "url": "https://news.qq.com/rain/a/20261013A0DYHM00",
-    "description": "腾讯新闻潮涌荆楚深度报道"
-  },
-  {
-    "id": "thepaper",
-    "platform": "澎湃新闻",
-    "category": "主流媒体",
-    "url": "https://www.thepaper.cn/newsDetail_forward_26678912",
-    "description": "澎湃深度调查图文报道"
+    "url": "https://news.qq.com/rain/a/20261015A007J600?id=20261015A007J600&path=a&app=news&suid=&redirect_pc=1",
+    "description": "腾讯新闻世界灌溉工程遗产报道"
   },
   {
     "id": "douban",
@@ -178,8 +213,8 @@
     "id": "zhihu",
     "platform": "知乎专栏",
     "category": "问答社区",
-    "url": "https://zhuanlan.zhihu.com/p/2093348766606702013",
-    "description": "知乎深度专栏博文"
+    "url": "https://zhuanlan.zhihu.com/p/100797521",
+    "description": "知乎专栏《ICP经营许可证》全面解答"
   },
   {
     "id": "weibo_article",
@@ -194,5 +229,19 @@
     "category": "自媒体/门户网站",
     "url": "https://www.163.com/auto/article/C09L73QM00084KIF.html",
     "description": "网易汽车专栏报道"
+  },
+  {
+    "id": "xiaohongshu",
+    "platform": "小红书",
+    "category": "社交/生活方式",
+    "url": "https://www.xiaohongshu.com/discovery/item/6a8fbccc000000002a03825a",
+    "description": "小红书图文生活笔记"
+  },
+  {
+    "id": "lofter",
+    "platform": "网易LOFTER",
+    "category": "文化与创作社区",
+    "url": "https://emm3716958.lofter.com/post/74daebd2_34ec49f1a",
+    "description": "网易LOFTER同人图文博文"
   }
 ]

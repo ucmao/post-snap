@@ -8,11 +8,20 @@ import { Kr36Extractor } from './36kr.js';
 import { DoubanExtractor } from './douban.js';
 import { InfoQExtractor } from './infoq.js';
 import { OSChinaExtractor } from './oschina.js';
+import { TiebaExtractor } from './tieba.js';
+import { HnrExtractor } from './hnr.js';
+import { SohuExtractor } from './sohu.js';
+import { WeiboExtractor } from './weibo.js';
+import { XueqiuExtractor } from './xueqiu.js';
+import { XiaohongshuExtractor } from './xiaohongshu.js';
+import { LofterExtractor } from './lofter.js';
 import { GeneralExtractor } from './general.js';
 
 const specializedExtractors: IExtractor[] = [
   new WechatExtractor(),
   new ZhihuExtractor(),
+  new XiaohongshuExtractor(),
+  new LofterExtractor(),
   new JuejinExtractor(),
   new CSDNExtractor(),
   new ToutiaoExtractor(),
@@ -20,6 +29,11 @@ const specializedExtractors: IExtractor[] = [
   new DoubanExtractor(),
   new InfoQExtractor(),
   new OSChinaExtractor(),
+  new TiebaExtractor(),
+  new HnrExtractor(),
+  new SohuExtractor(),
+  new WeiboExtractor(),
+  new XueqiuExtractor(),
 ];
 
 const generalExtractor = new GeneralExtractor();

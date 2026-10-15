@@ -98,7 +98,95 @@ async function runTests() {
   assert.ok(localUrl.includes('/uploads/'), 'Local provider must return /uploads/ URL');
   console.log('✅ Storage Providers passed.');
 
+  // Test 6: Xiaohongshu Extractor
+  console.log('Test 6: Xiaohongshu Extractor & high-res image cleaning...');
+  const mockXhsHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head><title>小红书测试笔记</title></head>
+      <body>
+        <script>
+          window.__INITIAL_STATE__ = {
+            note: {
+              firstNoteId: "64a1b2c3d4",
+              noteDetailMap: {
+                "64a1b2c3d4": {
+                  note: {
+                    title: "绝美露营胜地推荐",
+                    desc: "周末和朋友一起去山里露营，空气太棒了！\\n装备清单详见下文。",
+                    time: 1690000000000,
+                    user: {
+                      nickname: "户外探险家",
+                      userId: "u123456"
+                    },
+                    imageList: [
+                      {
+                        fileId: "spectrum/camp_photo_01",
+                        urlDefault: "https://sns-webpic-qc.xhscdn.com/123/camp_photo_01!nd_dft_wlteh_jpg_3"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        </script>
+      </body>
+    </html>
+  `;
+  const xhsResult = await dispatchExtract('https://www.xiaohongshu.com/explore/64a1b2c3d4', mockXhsHtml);
+  assert.equal(xhsResult.title, '绝美露营胜地推荐');
+  assert.equal(xhsResult.author, '户外探险家');
+  assert.equal(xhsResult.platform, '小红书');
+  assert.ok(xhsResult.content_html.includes('https://sns-img-qc.xhscdn.com/spectrum/camp_photo_01?imageView2/2/w/1920/format/jpg'), 'image should be upgraded to 1920 lossless JPG');
+  assert.ok(xhsResult.content_html.includes('周末和朋友一起去山里露营'), 'content paragraphs should be extracted');
+  console.log('✅ Xiaohongshu Extractor passed.');
+
+  // Test 7: Lofter Extractor
+  console.log('Test 7: NetEase LOFTER Extractor & image cleaning...');
+  const mockLofterHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head><title>网易LOFTER摄影博文</title></head>
+      <body>
+        <script>
+          window.__initialize_data__ = {
+            postData: {
+              data: {
+                blogInfo: {
+                  blogNickName: "光影记录者"
+                },
+                postData: {
+                  postView: {
+                    title: "街头夜景随拍",
+                    publishTime: 1680000000000,
+                    photoPostView: {
+                      caption: "雨后的城市霓虹闪烁。",
+                      photoLinks: [
+                        {
+                          raw: "https://imglf3.nosdn0.126.net/img/street_neon.jpg?imageView&thumbnail=500x0&quality=96"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          };
+        </script>
+      </body>
+    </html>
+  `;
+  const lofterResult = await dispatchExtract('https://photographer.lofter.com/post/abc_123', mockLofterHtml);
+  assert.equal(lofterResult.title, '街头夜景随拍');
+  assert.equal(lofterResult.author, '光影记录者');
+  assert.equal(lofterResult.platform, '网易LOFTER');
+  assert.ok(lofterResult.content_html.includes('https://imglf3.nosdn0.126.net/img/street_neon.jpg'), 'thumbnail query params should be stripped');
+  assert.ok(lofterResult.content_html.includes('雨后的城市霓虹闪烁'), 'caption should be included');
+  console.log('✅ NetEase LOFTER Extractor passed.');
+
   console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY! Everything works as expected.\n');
+
 }
 
 runTests().catch((err) => {

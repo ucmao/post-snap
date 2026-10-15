@@ -23,10 +23,14 @@ export class OSChinaExtractor extends BaseExtractor {
         const res = await gotScraping(apiUrl, { timeout: { request: config.requestTimeout } });
         const $ = cheerio.load(res.body, { xmlMode: true });
         const title = $('news title').text().trim();
+        const author = $('news author').text().trim() || '开源中国';
+        const publishTime = $('news pubDate').text().trim();
         const contentHtml = $('news body').text().trim();
         if (title && contentHtml) {
           return {
             title,
+            author,
+            publish_time: publishTime,
             content_html: contentHtml,
             platform: '开源中国 (OSChina)',
           };
@@ -42,12 +46,14 @@ export class OSChinaExtractor extends BaseExtractor {
         const res = await gotScraping(apiUrl, { timeout: { request: config.requestTimeout } });
         const $ = cheerio.load(res.body, { xmlMode: true });
         const title = $('blog title').text().trim();
-        const author = $('blog author').text().trim();
+        const author = $('blog author').text().trim() || '开源中国博主';
+        const publishTime = $('blog pubDate').text().trim();
         const contentHtml = $('blog body').text().trim();
         if (title && contentHtml) {
           return {
             title,
             author,
+            publish_time: publishTime,
             content_html: contentHtml,
             platform: '开源中国 (OSChina)',
           };

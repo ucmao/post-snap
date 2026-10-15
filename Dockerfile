@@ -17,7 +17,7 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=3008
 ENV HOST=0.0.0.0
 ENV UPLOADS_DIR=/app/uploads
 
@@ -27,7 +27,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 RUN mkdir -p /app/uploads
 
-EXPOSE 3000
+EXPOSE 3008
 
 VOLUME ["/app/uploads"]
 

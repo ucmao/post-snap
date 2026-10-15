@@ -26,6 +26,11 @@ export interface ExtractOptions {
    * @default false
    */
   clean_styles?: boolean;
+  /**
+   * Whether to format markdown with structured article header (Title, Author, Date, Source)
+   * @default true
+   */
+  markdown_header?: boolean;
 }
 
 /**

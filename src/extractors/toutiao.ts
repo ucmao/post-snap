@@ -14,12 +14,9 @@ export class ToutiaoExtractor extends BaseExtractor {
   }
 
   async extract(url: string, _initialHtml: string): Promise<RawExtractedArticle> {
-    // 1. Extract Article ID from URL
     const idMatch = url.match(/(?:article\/|i)(\d+)/);
     const articleId = idMatch ? idMatch[1] : '';
 
-    // 2. Toutiao PC version enforces heavy JS-VM obfuscation without rendering SSR DOM.
-    // However, Toutiao's mobile endpoint (m.toutiao.com/article/:id) serves complete SSR HTML!
     const targetUrl = articleId
       ? `https://m.toutiao.com/article/${articleId}/`
       : url;
@@ -37,7 +34,6 @@ export class ToutiaoExtractor extends BaseExtractor {
     const html = response.body;
     const $ = cheerio.load(html);
 
-    // 3. Extract Metadata
     const title = $('h1').first().text().trim() ||
                   $('title').text().replace('- 今日头条', '').trim() ||
                   this.getMetaContent($, 'og:title') ||
@@ -47,18 +43,22 @@ export class ToutiaoExtractor extends BaseExtractor {
                    $('.author-name').first().text().trim() ||
                    $('.user-name').first().text().trim() ||
                    this.getMetaContent($, 'author') ||
-                   '';
+                   '今日头条';
+
+    let publishTime = $('.time, span.time, .article-time, .publish-time').first().text().trim() ||
+                      this.getMetaContent($, 'article:published_time');
+    if (!publishTime) {
+      const timeMatch = html.match(/202\d-[01]\d-[0-3]\d(\s+[0-2]\d:[0-5]\d)?/);
+      if (timeMatch) publishTime = timeMatch[0];
+    }
 
     const coverImage = this.getMetaContent($, 'og:image');
 
-    // 4. Extract Article Content
     const contentDom = $('article').first();
 
-    // Remove noise elements
     contentDom.find('.app-install-block, .open-app-block, .feedback-block').remove();
     this.removeNoiseElements($, contentDom);
 
-    // Normalize Toutiao images
     contentDom.find('img').each((_, el) => {
       const $img = $(el);
       const realSrc = $img.attr('data-src') || $img.attr('src');
@@ -73,9 +73,10 @@ export class ToutiaoExtractor extends BaseExtractor {
     return {
       title,
       author,
+      publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
-      platform: 'Toutiao (今日头条)',
+      platform: '今日头条',
     };
   }
 }

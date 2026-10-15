@@ -23,7 +23,6 @@ export class DoubanExtractor extends BaseExtractor {
     }
 
     try {
-      // Douban mobile Rexxar API provides complete JSON without login wall!
       const apiUrl = `https://m.douban.com/rexxar/api/v2/note/${noteId}`;
       const res: any = await gotScraping(apiUrl, {
         headers: {
@@ -37,10 +36,12 @@ export class DoubanExtractor extends BaseExtractor {
         const author = res.author?.name || '豆瓣用户';
         const coverImage = res.cover_url || res.photos?.[0]?.image?.normal?.url;
         const contentHtml = res.content || '';
+        const publishTime = res.create_time || res.pub_date || res.update_time;
 
         return {
           title,
           author,
+          publish_time: publishTime,
           cover_image: coverImage,
           content_html: contentHtml,
           platform: '豆瓣日记',

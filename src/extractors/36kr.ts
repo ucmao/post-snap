@@ -14,8 +14,6 @@ export class Kr36Extractor extends BaseExtractor {
     const idMatch = url.match(/36kr\.com\/p\/(\d+)/);
     const articleId = idMatch ? idMatch[1] : '';
 
-    // 36Kr PC enforces WAF token verification.
-    // However, 36Kr mobile H5 provides complete SSR state with full article payload!
     const targetUrl = articleId
       ? `https://m.36kr.com/p/${articleId}`
       : url;
@@ -44,9 +42,16 @@ export class Kr36Extractor extends BaseExtractor {
           const contentHtml = data.widgetContent || data.content || '';
           const coverImage = data.widgetImage || data.cover;
 
+          let publishTime: string | undefined;
+          if (data.publishTime) {
+            const ts = Number(data.publishTime);
+            publishTime = !isNaN(ts) ? new Date(ts).toISOString() : String(data.publishTime);
+          }
+
           return {
             title,
             author,
+            publish_time: publishTime,
             cover_image: coverImage,
             content_html: contentHtml,
             platform: '36氪',
