@@ -31,8 +31,18 @@ async function executeExtraction(options: ExtractOptions, log: any): Promise<Api
   const targetUrl = url.trim();
 
   // 1. Fetch remote article HTML with real browser fingerprints
+  const customHeaders: Record<string, string> = {};
+  if (targetUrl.includes('zhihu.com') && config.zhihuCookie) {
+    customHeaders['cookie'] = config.zhihuCookie;
+  } else if (targetUrl.includes('douban.com') && config.doubanCookie) {
+    customHeaders['cookie'] = config.doubanCookie;
+  } else if (targetUrl.includes('51cto.com') && config.cto51Cookie) {
+    customHeaders['cookie'] = config.cto51Cookie;
+  }
+
   const response = await gotScraping({
     url: targetUrl,
+    headers: customHeaders,
     headerGeneratorOptions: {
       browsers: [{ name: 'chrome', minVersion: 120 }],
       devices: ['desktop'],

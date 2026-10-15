@@ -64,7 +64,50 @@ export class WechatExtractor extends BaseExtractor {
       }
     });
 
-    const contentHtml = contentDom.html() || '';
+    let contentHtml = contentDom.html() || '';
+
+    // 6. Support WeChat Photo / Gallery messages (小绿书/多图轮播形态)
+    if (!contentHtml || contentHtml.trim().length === 0) {
+      // Check if it's a picture message (picture_page_info_list / cgiDataNew)
+      const picRegex = /cdn_url:\s*[\x27\x22](https?:\/\/mmbiz\.qpic\.cn\/[^\x27\x22]+)[\x27\x22]/g;
+      const galleryImages: string[] = [];
+      let m;
+      while ((m = picRegex.exec(html)) !== null) {
+        if (!galleryImages.includes(m[1])) {
+          galleryImages.push(m[1]);
+        }
+      }
+
+      // Check author / desc from cgiDataNew
+      const nickMatch = html.match(/nick_name:\s*[\x27\x22]([^\x27\x22]+)[\x27\x22]/);
+      const finalAuthor = author || (nickMatch ? nickMatch[1] : '');
+      const descMatch = html.match(/desc:\s*[\x27\x22]([^\x27\x22]*)[\x27\x22]/);
+      const desc = descMatch ? descMatch[1] : '';
+
+      if (galleryImages.length > 0) {
+        // Construct rich-text HTML for gallery post
+        const parts: string[] = [];
+        if (title && title !== '未命名微信文章') {
+          parts.push(`<h2>${title}</h2>`);
+        }
+        if (desc) {
+          parts.push(`<p>${desc}</p>`);
+        }
+        for (const imgUrl of galleryImages) {
+          parts.push(`<p><img src="${imgUrl}" referrerpolicy="no-referrer" /></p>`);
+        }
+        contentHtml = parts.join('\n');
+
+        return {
+          title,
+          author: finalAuthor,
+          publish_time: publishTime,
+          cover_image: coverImage || galleryImages[0],
+          content_html: contentHtml,
+          platform: 'WeChat Official Account (图文/图片消息)',
+        };
+      }
+    }
 
     return {
       title,
