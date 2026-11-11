@@ -1,13 +1,17 @@
 import { gotScraping } from 'got-scraping';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 import { config } from '../config.js';
 
 export class Kr36Extractor extends BaseExtractor {
   name = '36kr';
+  /** Fetches its own content from a platform API; the route skips the page fetch. */
+  selfFetch = true;
 
   canHandle(url: string): boolean {
-    return url.includes('36kr.com/p/');
+    const u = parseUrl(url);
+    return hostMatches(u, '36kr.com') && u!.pathname.startsWith('/p/');
   }
 
   async extract(url: string, _initialHtml: string): Promise<RawExtractedArticle> {

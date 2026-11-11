@@ -74,6 +74,8 @@ export interface ApiResponse<T> {
  */
 export interface IExtractor {
   name: string;
+  /** True when the extractor fetches its own content (platform API) and ignores the page HTML */
+  selfFetch?: boolean;
   /** Return true if this extractor can handle the given URL */
   canHandle(url: string): boolean;
   /** Extract raw article details from HTML */

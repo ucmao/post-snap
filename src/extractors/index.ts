@@ -42,7 +42,10 @@ const generalExtractor = new GeneralExtractor();
  * Dispatch article extraction to the most specialized extractor available,
  * falling back gracefully to the general Readability extractor.
  */
+export function resolveExtractor(url: string): IExtractor {
+  return specializedExtractors.find(ext => ext.canHandle(url)) || generalExtractor;
+}
+
 export async function dispatchExtract(url: string, html: string): Promise<RawExtractedArticle> {
-  const matchedExtractor = specializedExtractors.find(ext => ext.canHandle(url)) || generalExtractor;
-  return matchedExtractor.extract(url, html);
+  return resolveExtractor(url).extract(url, html);
 }

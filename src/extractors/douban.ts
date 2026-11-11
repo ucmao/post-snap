@@ -1,13 +1,17 @@
 import { gotScraping } from 'got-scraping';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 import { config } from '../config.js';
 
 export class DoubanExtractor extends BaseExtractor {
   name = 'douban';
+  /** Fetches its own content from a platform API; the route skips the page fetch. */
+  selfFetch = true;
 
   canHandle(url: string): boolean {
-    return url.includes('douban.com/note/');
+    const u = parseUrl(url);
+    return hostMatches(u, 'douban.com') && u!.pathname.startsWith('/note/');
   }
 
   async extract(url: string, _initialHtml: string): Promise<RawExtractedArticle> {

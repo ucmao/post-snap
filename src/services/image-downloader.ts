@@ -2,6 +2,71 @@ import got from 'got';
 import * as cheerio from 'cheerio';
 import { IStorageProvider, ExtractedImage } from '../types/index.js';
 import { config } from '../config.js';
+import { assertSafeUrl, guardRedirect, safeLookup } from '../utils/url-guard.js';
+import { sniffImageType } from '../utils/image-type.js';
+import { hostMatches } from '../utils/url-match.js';
+
+/**
+ * Download an image with SSRF protection, a hard streaming size cap and
+ * magic-byte type validation. Returns null when the resource is rejected.
+ */
+async function fetchImageSafely(imageUrl: string, referer: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  await assertSafeUrl(imageUrl);
+
+  const maxBytes = config.maxImageSizeBytes;
+
+  const buffer = await new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let total = 0;
+
+    const stream = got.stream(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Referer': referer,
+        'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+      },
+      timeout: { request: config.requestTimeout },
+      dnsLookup: safeLookup as any,
+      maxRedirects: 5,
+      hooks: { beforeRedirect: [guardRedirect as any] },
+    });
+
+    stream.on('response', (res: any) => {
+      const contentType = String(res.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+      // Reject obvious non-images early (HTML error pages, SVG, JSON, ...)
+      if (contentType && !contentType.startsWith('image/') && contentType !== 'application/octet-stream' && contentType !== 'binary/octet-stream') {
+        stream.destroy(new Error(`Not an image (Content-Type: ${contentType})`));
+        return;
+      }
+      if (contentType === 'image/svg+xml') {
+        stream.destroy(new Error('SVG images are not allowed'));
+        return;
+      }
+      const declared = parseInt(String(res.headers['content-length'] || ''), 10);
+      if (Number.isFinite(declared) && declared > maxBytes) {
+        stream.destroy(new Error(`Image exceeds max size (${declared} > ${maxBytes})`));
+      }
+    });
+
+    stream.on('data', (chunk: Buffer) => {
+      total += chunk.length;
+      if (total > maxBytes) {
+        stream.destroy(new Error(`Image exceeds max size (> ${maxBytes})`));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+    stream.on('error', reject);
+  });
+
+  const mimeType = sniffImageType(buffer);
+  if (!mimeType) {
+    console.warn(`[ImageProcessor] Rejected non-image content: ${imageUrl}`);
+    return null;
+  }
+  return { buffer, mimeType };
+}
 
 export interface ProcessImagesResult {
   html: string;
@@ -31,7 +96,7 @@ export async function processAndRehostImages(
   for (const el of imgElements) {
     const src = $(el).attr('src')?.trim();
     if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
-      if (!uniqueUrls.includes(src)) {
+      if (!uniqueUrls.includes(src) && uniqueUrls.length < config.maxImagesPerArticle) {
         uniqueUrls.push(src);
       }
     }
@@ -42,11 +107,11 @@ export async function processAndRehostImages(
     try {
       // Pick appropriate referer based on image host
       let referer = 'https://www.google.com';
-      if (imageUrl.includes('qpic.cn') || imageUrl.includes('weixin.qq.com')) {
+      if (hostMatches(imageUrl, 'qpic.cn', 'weixin.qq.com')) {
         referer = 'https://mp.weixin.qq.com/';
-      } else if (imageUrl.includes('zhimg.com') || imageUrl.includes('zhihu.com')) {
+      } else if (hostMatches(imageUrl, 'zhimg.com', 'zhihu.com')) {
         referer = 'https://www.zhihu.com/';
-      } else if (imageUrl.includes('juejin.cn')) {
+      } else if (hostMatches(imageUrl, 'juejin.cn')) {
         referer = 'https://juejin.cn/';
       } else if (sourceUrl) {
         try {
@@ -55,22 +120,10 @@ export async function processAndRehostImages(
         } catch {}
       }
 
-      const res = await got(imageUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Referer': referer,
-          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        },
-        timeout: { request: config.requestTimeout },
-      });
+      const downloaded = await fetchImageSafely(imageUrl, referer);
+      if (!downloaded) return null;
 
-      const buffer = res.rawBody;
-      if (buffer.length > config.maxImageSizeBytes) {
-        console.warn(`[ImageProcessor] Image exceeds max size (${buffer.length} > ${config.maxImageSizeBytes}): ${imageUrl}`);
-        return null;
-      }
-
-      const mimeType = (res.headers['content-type'] as string) || 'image/jpeg';
+      const { buffer, mimeType } = downloaded;
       const rehostedUrl = await storageProvider.save(buffer, mimeType);
       return rehostedUrl;
     } catch (err: any) {

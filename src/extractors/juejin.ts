@@ -1,12 +1,14 @@
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class JuejinExtractor extends BaseExtractor {
   name = 'juejin';
 
   canHandle(url: string): boolean {
-    return url.includes('juejin.cn/post/');
+    const u = parseUrl(url);
+    return hostMatches(u, 'juejin.cn') && u!.pathname.startsWith('/post/');
   }
 
   async extract(url: string, html: string): Promise<RawExtractedArticle> {

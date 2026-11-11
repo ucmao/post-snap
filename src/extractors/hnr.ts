@@ -1,13 +1,16 @@
 import { gotScraping } from 'got-scraping';
 import { BaseExtractor } from './base.js';
+import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 import { config } from '../config.js';
 
 export class HnrExtractor extends BaseExtractor {
   name = 'hnr';
+  /** Fetches its own content from a platform API; the route skips the page fetch. */
+  selfFetch = true;
 
   canHandle(url: string): boolean {
-    return url.includes('hnr.cn/') || url.includes('hntv.tv/');
+    return hostMatches(url, 'hnr.cn', 'hntv.tv');
   }
 
   async extract(url: string, _initialHtml: string): Promise<RawExtractedArticle> {

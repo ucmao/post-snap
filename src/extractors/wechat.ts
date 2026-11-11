@@ -1,12 +1,13 @@
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class WechatExtractor extends BaseExtractor {
   name = 'wechat';
 
   canHandle(url: string): boolean {
-    return url.includes('mp.weixin.qq.com');
+    return hostMatches(url, 'mp.weixin.qq.com');
   }
 
   async extract(url: string, html: string): Promise<RawExtractedArticle> {

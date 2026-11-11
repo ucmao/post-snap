@@ -1,16 +1,21 @@
 import * as cheerio from 'cheerio';
 import got from 'got';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 import { config } from '../config.js';
 
 export class ToutiaoExtractor extends BaseExtractor {
   name = 'toutiao';
+  /** Fetches its own content from a platform API; the route skips the page fetch. */
+  selfFetch = true;
 
   canHandle(url: string): boolean {
-    return url.includes('toutiao.com/article/') ||
-           url.includes('toutiao.com/i') ||
-           url.includes('m.toutiao.com');
+    const u = parseUrl(url);
+    if (!hostMatches(u, 'toutiao.com')) return false;
+    return u!.pathname.startsWith('/article/') ||
+           /^\/i\d/.test(u!.pathname) ||
+           hostMatches(u, 'm.toutiao.com');
   }
 
   async extract(url: string, _initialHtml: string): Promise<RawExtractedArticle> {

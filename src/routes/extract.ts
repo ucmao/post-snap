@@ -2,12 +2,22 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { gotScraping } from 'got-scraping';
 import * as cheerio from 'cheerio';
 import { ExtractOptions, ApiResponse, ExtractedArticle, ExtractedImage } from '../types/index.js';
-import { dispatchExtract } from '../extractors/index.js';
+import { resolveExtractor } from '../extractors/index.js';
+import { assertSafeUrl, guardRedirect, UnsafeUrlError } from '../utils/url-guard.js';
 import { cleanHtml } from '../services/html-cleaner.js';
 import { convertHtmlToMarkdown } from '../services/markdown.js';
 import { processAndRehostImages } from '../services/image-downloader.js';
 import { getStorageProvider } from '../services/storage/index.js';
 import { config } from '../config.js';
+import { hostMatches } from '../utils/url-match.js';
+
+/** Find an SSRF-guard rejection anywhere in the error cause chain (got wraps hook errors). */
+function findUnsafeUrlError(err: any): Error | null {
+  for (let e = err, depth = 0; e && depth < 5; e = e.cause, depth++) {
+    if (e instanceof UnsafeUrlError || e.name === 'UnsafeUrlError' || e.code === 'EPRIVATEADDR') return e;
+  }
+  return null;
+}
 
 /**
  * Core extraction executor shared by both GET and POST endpoints
@@ -31,15 +41,17 @@ async function executeExtraction(options: ExtractOptions, log: any): Promise<Api
 
   const targetUrl = url.trim();
 
-  // 1. Fetch remote article HTML with real browser fingerprints
-  let rawHtml = '';
-  const isDirectApi = targetUrl.includes('tieba.baidu.com') ||
-                      targetUrl.includes('hnr.cn/') ||
-                      targetUrl.includes('hntv.tv/');
+  // 0. SSRF guard: only public http(s) hosts
+  await assertSafeUrl(targetUrl);
 
-  if (!isDirectApi) {
+  const extractor = resolveExtractor(targetUrl);
+
+  // 1. Fetch remote article HTML with real browser fingerprints
+  //    (skipped for extractors that call a platform API themselves)
+  let rawHtml = '';
+  if (!extractor.selfFetch) {
     const customHeaders: Record<string, string> = {};
-    if (targetUrl.includes('zhihu.com') && config.zhihuCookie) {
+    if (hostMatches(targetUrl, 'zhihu.com') && config.zhihuCookie) {
       customHeaders['cookie'] = config.zhihuCookie;
     }
 
@@ -53,14 +65,26 @@ async function executeExtraction(options: ExtractOptions, log: any): Promise<Api
       },
       timeout: { request: config.requestTimeout },
       retry: { limit: 1 },
+      maxRedirects: 5,
+      hooks: { beforeRedirect: [guardRedirect as any] },
       throwHttpErrors: false,
     });
 
+    if (response.statusCode >= 400) {
+      return {
+        code: 502,
+        message: `Upstream returned HTTP ${response.statusCode}. The page may be blocked by anti-bot protection, require login, or no longer exist.`,
+      };
+    }
+
     rawHtml = response.body;
+    if (!rawHtml || !rawHtml.trim()) {
+      return { code: 502, message: 'Upstream returned an empty response body.' };
+    }
   }
 
-  // 2. Dispatch to appropriate extractor
-  const rawArticle = await dispatchExtract(targetUrl, rawHtml);
+  // 2. Run the matched extractor
+  const rawArticle = await extractor.extract(targetUrl, rawHtml);
 
   let processedHtml = rawArticle.content_html;
   let finalImages: ExtractedImage[] = [];
@@ -109,6 +133,13 @@ async function executeExtraction(options: ExtractOptions, log: any): Promise<Api
   const plainText = $text.text().trim();
   const wordCount = plainText.replace(/\s+/g, '').length;
 
+  if (!plainText && finalImages.length === 0) {
+    return {
+      code: 422,
+      message: 'No article content could be extracted from this URL. It may be a verification page, a login wall, or an unsupported page type.',
+    };
+  }
+
   const data: ExtractedArticle = {
     title: rawArticle.title,
     author: rawArticle.author,
@@ -137,6 +168,10 @@ export async function extractRoutes(fastify: FastifyInstance) {
       const result = await executeExtraction(request.body || ({} as any), request.log);
       return reply.status(result.code).send(result);
     } catch (err: any) {
+      const unsafe = findUnsafeUrlError(err);
+      if (unsafe) {
+        return reply.status(400).send({ code: 400, message: unsafe.message } as ApiResponse<null>);
+      }
       request.log.error(err);
       return reply.status(500).send({
         code: 500,
@@ -179,6 +214,10 @@ export async function extractRoutes(fastify: FastifyInstance) {
       const result = await executeExtraction(options, request.log);
       return reply.status(result.code).send(result);
     } catch (err: any) {
+      const unsafe = findUnsafeUrlError(err);
+      if (unsafe) {
+        return reply.status(400).send({ code: 400, message: unsafe.message } as ApiResponse<null>);
+      }
       request.log.error(err);
       return reply.status(500).send({
         code: 500,

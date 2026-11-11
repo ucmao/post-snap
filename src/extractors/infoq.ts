@@ -1,13 +1,17 @@
 import { gotScraping } from 'got-scraping';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 import { config } from '../config.js';
 
 export class InfoQExtractor extends BaseExtractor {
   name = 'infoq';
+  /** Fetches its own content from a platform API; the route skips the page fetch. */
+  selfFetch = true;
 
   canHandle(url: string): boolean {
-    return url.includes('infoq.cn/article/');
+    const u = parseUrl(url);
+    return hostMatches(u, 'infoq.cn') && u!.pathname.startsWith('/article/');
   }
 
   async extract(url: string, _initialHtml: string): Promise<RawExtractedArticle> {

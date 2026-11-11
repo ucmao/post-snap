@@ -1,12 +1,13 @@
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class XueqiuExtractor extends BaseExtractor {
   name = 'xueqiu';
 
   canHandle(url: string): boolean {
-    return /xueqiu\.com\//i.test(url);
+    return hostMatches(url, 'xueqiu.com');
   }
 
   async extract(url: string, html: string): Promise<RawExtractedArticle> {

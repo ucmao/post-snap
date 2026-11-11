@@ -1,15 +1,19 @@
 import { gotScraping } from 'got-scraping';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 import { config } from '../config.js';
 
 export class TiebaExtractor extends BaseExtractor {
   name = 'tieba';
+  /** Fetches its own content from a platform API; the route skips the page fetch. */
+  selfFetch = true;
 
   canHandle(url: string): boolean {
-    return url.includes('tieba.baidu.com/p/') ||
-           url.includes('tieba.baidu.com/f?kz=') ||
-           url.includes('tieba.baidu.com/mo/q/m?kz=');
+    const u = parseUrl(url);
+    if (!hostMatches(u, 'tieba.baidu.com')) return false;
+    return u!.pathname.startsWith('/p/') ||
+           ((u!.pathname === '/f' || u!.pathname === '/mo/q/m') && u!.searchParams.has('kz'));
   }
 
   async extract(url: string, _initialHtml: string): Promise<RawExtractedArticle> {

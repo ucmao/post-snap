@@ -97,11 +97,44 @@ docker compose logs -f
 
 ---
 
+### 🔐 安全配置（公网部署必读）
+
+PostSnap 会代替调用方去请求任意 URL 并下载图片，暴露到公网前请务必配置以下环境变量（见 `.env.example`）：
+
+| 变量 | 默认值 | 说明 |
+| :--- | :---: | :--- |
+| `API_KEY` | 空 | API 密钥（多个用逗号分隔）。留空则不鉴权，**仅适合本地开发** |
+| `RATE_LIMIT_PER_MINUTE` | `30` | 每个 IP 每分钟请求上限，`0` 为不限流 |
+| `CORS_ORIGINS` | 空 | 允许跨域的来源，留空为全部允许 |
+| `TRUST_PROXY` | `false` | 部署在 Nginx / LB 后设为 `true`，按真实 IP 限流 |
+| `ALLOW_PRIVATE_NETWORK` | `false` | 是否允许抓取内网地址。公网部署请保持 `false` |
+| `MAX_IMAGES_PER_ARTICLE` | `100` | 单篇文章最多转存图片数 |
+
+内置防护：
+
+- **SSRF 防护**：拒绝非 http(s) 协议，拒绝解析到 `127.0.0.0/8`、`10/8`、`172.16/12`、`192.168/16`、`169.254/16`（云元数据）、IPv6 私有段等地址；每次重定向和实际建连时都会重新校验。
+- **图片转存加固**：按文件头（magic bytes）识别真实类型，仅保存 JPEG / PNG / GIF / WebP / AVIF / BMP，拒绝 SVG 与 HTML；下载时流式限制大小；`/uploads/` 响应带 `nosniff` 与严格 CSP。
+- **鉴权方式**：Header `X-API-Key: <key>`、`Authorization: Bearer <key>`，或 GET 请求 Query `api_key=<key>`。
+
+#### 错误码
+
+| `code` | 含义 |
+| :---: | :--- |
+| `400` | URL 非法，或指向内网 / 保留地址 |
+| `401` | 缺少或错误的 API Key |
+| `422` | 页面获取成功但未能提取到正文（验证页、登录墙等） |
+| `429` | 触发限流，参考 `Retry-After` 响应头 |
+| `502` | 目标站点返回非 2xx（反爬拦截、需要登录、文章已删除等）或空响应 |
+| `500` | 服务内部错误 |
+
+---
+
 ### 调用示例 (cURL)
 
 ```bash
 curl -X POST http://localhost:3008/api/v1/extract \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key" \
   -d '{
     "url": "https://mp.weixin.qq.com/s/23p2uY833xO6X2CwMsDRyg",
     "format": "both"
@@ -162,7 +195,7 @@ curl -X POST http://localhost:3008/api/v1/extract \
 async function importArticleToEditor(articleUrl) {
   const res = await fetch('http://localhost:3008/api/v1/extract', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'your-api-key' },
     body: JSON.stringify({
       url: articleUrl,
       upload_images: true // 自动转存图片到本地，彻底防裂图

@@ -1,12 +1,13 @@
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class CSDNExtractor extends BaseExtractor {
   name = 'csdn';
 
   canHandle(url: string): boolean {
-    return url.includes('blog.csdn.net');
+    return hostMatches(url, 'blog.csdn.net');
   }
 
   async extract(url: string, html: string): Promise<RawExtractedArticle> {

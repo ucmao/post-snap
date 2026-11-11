@@ -1,12 +1,14 @@
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class ZhihuExtractor extends BaseExtractor {
   name = 'zhihu';
 
   canHandle(url: string): boolean {
-    return url.includes('zhihu.com/p/') || url.includes('zhuanlan.zhihu.com/p/') || url.includes('zhihu.com/question/');
+    const u = parseUrl(url);
+    return hostMatches(u, 'zhihu.com') && (u!.pathname.startsWith('/p/') || u!.pathname.startsWith('/question/'));
   }
 
   async extract(url: string, html: string): Promise<RawExtractedArticle> {

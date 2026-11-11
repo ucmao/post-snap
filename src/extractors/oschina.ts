@@ -1,14 +1,17 @@
 import { gotScraping } from 'got-scraping';
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 import { config } from '../config.js';
 
 export class OSChinaExtractor extends BaseExtractor {
   name = 'oschina';
+  /** Fetches its own content from a platform API; the route skips the page fetch. */
+  selfFetch = true;
 
   canHandle(url: string): boolean {
-    return url.includes('oschina.net');
+    return hostMatches(url, 'oschina.net');
   }
 
   async extract(url: string, _initialHtml: string): Promise<RawExtractedArticle> {

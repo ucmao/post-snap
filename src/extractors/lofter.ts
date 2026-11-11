@@ -1,12 +1,13 @@
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class LofterExtractor extends BaseExtractor {
   name = 'lofter';
 
   canHandle(url: string): boolean {
-    return url.includes('lofter.com');
+    return hostMatches(url, 'lofter.com');
   }
 
   /**

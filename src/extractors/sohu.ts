@@ -1,13 +1,15 @@
 import * as cheerio from 'cheerio';
 import crypto from 'node:crypto';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class SohuExtractor extends BaseExtractor {
   name = 'sohu';
 
   canHandle(url: string): boolean {
-    return /sohu\.com\/a\//i.test(url);
+    const u = parseUrl(url);
+    return hostMatches(u, 'sohu.com') && u!.pathname.startsWith('/a/');
   }
 
   private decryptSohuImage(encrypted: string): string | null {

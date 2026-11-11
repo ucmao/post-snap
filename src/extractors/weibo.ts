@@ -1,12 +1,14 @@
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class WeiboExtractor extends BaseExtractor {
   name = 'weibo';
 
   canHandle(url: string): boolean {
-    return /weibo\.(com|cn)\/ttarticle/i.test(url);
+    const u = parseUrl(url);
+    return hostMatches(u, 'weibo.com', 'weibo.cn') && u!.pathname.startsWith('/ttarticle');
   }
 
   async extract(url: string, html: string): Promise<RawExtractedArticle> {
