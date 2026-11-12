@@ -1,8 +1,19 @@
-import { gotScraping } from 'got-scraping';
+import { httpJson } from '../utils/http.js';
+import { logger, errorMessage } from '../utils/logger.js';
 import { BaseExtractor } from './base.js';
 import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
-import { config } from '../config.js';
+
+interface InfoQDetailResponse {
+  data?: {
+    article_title?: string;
+    author?: Array<{ nickname?: string }>;
+    article_cover?: string;
+    content?: string;
+    ai_summary?: string;
+    content_short?: string;
+  };
+}
 
 export class InfoQExtractor extends BaseExtractor {
   name = 'infoq';
@@ -22,19 +33,19 @@ export class InfoQExtractor extends BaseExtractor {
       return {
         title: 'InfoQ 文章',
         content_html: '',
-        platform: '极客邦 InfoQ',
       };
     }
 
     try {
-      const res: any = await gotScraping.post('https://www.infoq.cn/public/v1/article/getDetail', {
+      const res = await httpJson<InfoQDetailResponse>({
+        url: 'https://www.infoq.cn/public/v1/article/getDetail',
+        method: 'POST',
         json: { uuid },
         headers: {
           'Referer': `https://www.infoq.cn/article/${uuid}`,
           'Origin': 'https://www.infoq.cn',
         },
-        timeout: { request: config.requestTimeout },
-      }).json();
+      });
 
       const item = res?.data;
       if (item) {
@@ -52,17 +63,15 @@ export class InfoQExtractor extends BaseExtractor {
           author,
           cover_image: coverImage,
           content_html: contentHtml,
-          platform: '极客邦 InfoQ',
         };
       }
-    } catch (e: any) {
-      console.warn(`[InfoQExtractor] API request failed: ${e.message}`);
+    } catch (e) {
+      logger.warn({ extractor: 'infoq', url }, `API request failed: ${errorMessage(e)}`);
     }
 
     return {
       title: 'InfoQ 文章',
       content_html: '',
-      platform: '极客邦 InfoQ',
     };
   }
 }

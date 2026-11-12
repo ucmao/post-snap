@@ -72,7 +72,6 @@ export class WeiboExtractor extends BaseExtractor {
       publish_time: publishTime,
       cover_image: coverImage,
       content_html: $content.html() || '',
-      platform: '微博头条文章',
     };
   }
 }

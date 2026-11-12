@@ -2,6 +2,7 @@ import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
+import { detectGeneralPlatform } from '../utils/platform.js';
 import { RawExtractedArticle } from '../types/index.js';
 
 export class GeneralExtractor extends BaseExtractor {
@@ -106,30 +107,6 @@ export class GeneralExtractor extends BaseExtractor {
     return undefined;
   }
 
-  private detectPlatform(url: string): string {
-    const u = url.toLowerCase();
-    if (u.includes('eastmoney.com')) return '东方财富网';
-    if (u.includes('163.com/money')) return '网易财经';
-    if (u.includes('163.com')) return '网易号';
-    if (u.includes('zhibo8.com')) return '直播吧';
-    if (u.includes('cyzone.cn')) return '创业邦';
-    if (u.includes('qianzhan.com')) return '前瞻经济学人';
-    if (u.includes('myzaker.com')) return 'ZAKER';
-    if (u.includes('thepaper.cn')) return '澎湃新闻';
-    if (u.includes('k.sina.com.cn') || u.includes('sina.com.cn')) return '新浪看点';
-    if (u.includes('china.com')) return '中华网';
-    if (u.includes('cnblogs.com')) return '博客园';
-    if (u.includes('segmentfault.com')) return 'SegmentFault 思否';
-    if (u.includes('sspai.com')) return '少数派';
-    if (u.includes('ithome.com')) return 'IT之家';
-    if (u.includes('baijiahao.baidu.com')) return '百度百家号';
-    if (u.includes('qq.com')) return '腾讯新闻';
-    if (u.includes('huxiu.com')) return '虎嗅网';
-    if (u.includes('github.blog')) return 'GitHub Blog';
-    if (u.includes('wordpress.org')) return '独立博客 (WordPress)';
-    return '网页文章';
-  }
-
   async extract(url: string, html: string): Promise<RawExtractedArticle> {
     const dom = new JSDOM(html, { url });
     const reader = new Readability(dom.window.document, {
@@ -215,7 +192,7 @@ export class GeneralExtractor extends BaseExtractor {
       publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
-      platform: this.detectPlatform(url),
+      platform_id: detectGeneralPlatform(url),
     };
   }
 }

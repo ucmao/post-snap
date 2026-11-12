@@ -1,6 +1,7 @@
 import TurndownService from 'turndown';
 // @ts-ignore
 import turndownPluginGfm from 'turndown-plugin-gfm';
+import { logger, errorMessage } from '../utils/logger.js';
 
 const { gfm } = turndownPluginGfm;
 
@@ -111,8 +112,8 @@ export function convertHtmlToMarkdown(html: string, meta?: MarkdownArticleMeta):
   try {
     const rawMarkdown = turndownService.turndown(html);
     return postProcessMarkdown(rawMarkdown, meta);
-  } catch (err: any) {
-    console.warn(`[MarkdownConverter] Conversion failed, fallback to empty string: ${err.message}`);
+  } catch (err) {
+    logger.warn(`Markdown conversion failed, falling back to empty string: ${errorMessage(err)}`);
     return '';
   }
 }

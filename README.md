@@ -13,7 +13,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/Node.js-%3E%3D20.0.0-green.svg" alt="Node.js">
   <img src="https://img.shields.io/badge/TypeScript-5.x-blue.svg" alt="TypeScript">
-  <a href="#-支持平台矩阵实测-35-个平台"><img src="https://img.shields.io/badge/Tested%20Platforms-35-brightgreen.svg" alt="Tested Platforms: 35"></a>
+  <a href="test/reports/platform-report.md"><img src="https://img.shields.io/badge/Platforms-35%20covered-blue.svg" alt="Platforms: 35 covered"></a>
   <img src="https://img.shields.io/badge/Docker-Ready-2496ED.svg" alt="Docker Ready">
 </p>
 
@@ -31,7 +31,7 @@
 4. **防盗链裂图**：微信公众平台（`mmbiz.qpic.cn`）等有严格的 `Referer` 防盗链机制，直接引用会导致图片破损裂开；
 5. **Markdown 格式混乱**：缺乏语义化章节标题、无表格支持、代码块丢失语言标识、存在垃圾符号残留。
 
-**PostSnap 提供了开箱即用的轻量级解决方案**：纯 Node.js 内存运算（0 额外显存/浏览器开销），毫秒级输出标准化富文本 HTML 与结构精美的 Markdown！
+**PostSnap 提供了开箱即用的轻量级解决方案**：纯 Node.js 实现，无需 Headless 浏览器，一次请求即可输出标准化富文本 HTML 与结构清晰的 Markdown。耗时主要取决于目标站点响应速度（通常为数百毫秒到数秒）。
 
 ---
 
@@ -150,8 +150,10 @@ curl -X POST http://localhost:3008/api/v1/extract \
   "data": {
     "title": "特斯拉中国突然上架新车，10月15日开售，售价仅1399元",
     "author": "科技盘点君",
-    "publish_time": "2026-10-14T18:50:15.000Z",
+    "publish_time": "2026-10-14T10:50:15.000Z",
+    "publish_time_raw": "1791975015",
     "source_url": "https://mp.weixin.qq.com/s/23p2uY833xO6X2CwMsDRyg",
+    "platform_id": "wechat",
     "platform": "微信公众号",
     "cover_image": "https://mmbiz.qpic.cn/...",
     "word_count": 1710,
@@ -167,6 +169,19 @@ curl -X POST http://localhost:3008/api/v1/extract \
 }
 ```
 
+#### 返回字段说明
+
+| 字段 | 说明 |
+| :--- | :--- |
+| `platform_id` | **稳定的平台标识**，可放心用于分支判断，如 `wechat`、`zhihu`、`xiaohongshu`、`36kr`、`web`（未识别站点）。完整列表见 [`src/utils/platform.ts`](src/utils/platform.ts) |
+| `platform` | 平台展示名称，如 `微信公众号`，仅用于展示，可能调整 |
+| `publish_time` | 统一为 **ISO 8601（UTC）**。无时区的国内站点时间按北京时间（UTC+8）换算；支持时间戳、`2026-10-14 18:50`、`2026年10月14日`、`3小时前`、`昨天 12:30` 等格式。无法可靠解析时省略该字段 |
+| `publish_time_raw` | 页面上的原始时间值，便于排查或自行解析 |
+| `word_count` | 正文字符数（去除空白） |
+| `images` | 正文图片；开启 `upload_images` 时包含 `rehosted_url` |
+
+> Markdown 头版中的发布时间以北京时间 `YYYY-MM-DD HH:mm` 展示。
+
 #### 📝 Markdown 排版输出效果预览
 
 提取出的 `data.markdown` 自动具备结构化头版、自动小标题提升与 GFM 语法规范：
@@ -174,7 +189,7 @@ curl -X POST http://localhost:3008/api/v1/extract \
 ```markdown
 # 特斯拉中国突然上架新车，10月15日开售，售价仅1399元
 
-> **作者**：科技盘点君 &nbsp;|&nbsp; **发布时间**：2026-10-14T18:50:15.000Z &nbsp;|&nbsp; **来源平台**：微信公众号 &nbsp;|&nbsp; **原文链接**：[点击查看](https://mp.weixin.qq.com/s/23p2uY833xO6X2CwMsDRyg)
+> **作者**：科技盘点君 &nbsp;|&nbsp; **发布时间**：2026-10-14 18:50 &nbsp;|&nbsp; **来源平台**：微信公众号 &nbsp;|&nbsp; **原文链接**：[点击查看](https://mp.weixin.qq.com/s/23p2uY833xO6X2CwMsDRyg)
 
 ---
 
@@ -218,7 +233,7 @@ async function importArticleToEditor(articleUrl) {
 
 ---
 
-## 🌐 支持平台矩阵（实测 35 个平台）
+## 🌐 支持平台矩阵（覆盖 35 个平台）
 
 | 平台分类 | 覆盖平台 | 核心特性与适配策略 |
 | :--- | :--- | :--- |
@@ -231,16 +246,25 @@ async function importArticleToEditor(articleUrl) {
 
 ---
 
-### 🧪 自动化基准测试
+### 🧪 测试
 
-项目内置了针对 **35个主流平台真实文章** 的全量自动化测试套件（定义在 [`test/platforms.json`](test/platforms.json)），启动本地服务后即可一键运行：
+测试分为三层，前两层完全离线，已接入 GitHub Actions CI：
+
+| 命令 | 网络 | 说明 |
+| :--- | :---: | :--- |
+| `npm test` | 离线 | 单元测试（提取器、HTML 清洗、Markdown、SSRF 防护、时间与平台归一化）+ 平台快照回归测试 |
+| `npm run fixtures:record` | 需要 | 对 [`test/platforms.json`](test/platforms.json) 中的真实文章跑完整流程，录制所有 HTTP 响应到 `test/fixtures/<id>.json`，并生成[实测报告](test/reports/platform-report.md) |
+| `npm run test:platforms` | 需要 | 对已启动的服务（默认 `http://localhost:3008`）做端到端基准测试，设置了 `API_KEY` 时会自动携带 |
+
+**平台快照回归**：`npm test` 会把 `test/fixtures/` 中录制的真实响应离线回放，并与录制时的结果比对（标题、作者、发布时间、字数、图片数、Markdown 哈希）。改动提取器后无需联网即可发现回归，也不会因为平台临时封禁或文章被删而误报。平台改版导致提取失效时：修复提取器 → `npm run fixtures:record -- <id>` 重新录制 → 检查 diff。
+
+**实测通过率**：真实网络下的结果受反爬策略与平台改版影响，会随时间波动。最新通过率以 [`test/reports/platform-report.md`](test/reports/platform-report.md) 为准（由 `npm run fixtures:record` 生成）。
 
 ```bash
-# 启动本地服务后运行 35 个平台全量实测
-npm run test:platforms
-
-# 运行基础单元测试套件
-npm test
+npm test                      # 离线单元测试 + 快照回归
+npm run typecheck             # 类型检查（含测试与脚本）
+npm run fixtures:record       # 联网录制全部平台快照并生成报告
+npm run fixtures:record -- wechat zhihu   # 只重录指定平台
 ```
 
 ---

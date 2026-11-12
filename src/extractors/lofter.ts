@@ -3,6 +3,50 @@ import { BaseExtractor } from './base.js';
 import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
+interface LofterImage {
+  raw?: string;
+  orign?: string;
+  origin?: string;
+}
+
+interface LofterPostView {
+  title?: string;
+  digest?: string;
+  publishTime?: number | string;
+  noticeTime?: number | string;
+  content?: string;
+  firstImage?: LofterImage;
+  photoPostView?: {
+    caption?: string;
+    photoLinks?: LofterImage[];
+    firstImage?: LofterImage;
+  };
+  videoPostView?: {
+    caption?: string;
+    videoInfo?: { originUrl?: string; flashurl?: string };
+  };
+}
+
+interface LofterBlogInfo {
+  blogNickName?: string;
+  blogName?: string;
+}
+
+interface LofterInitData {
+  postData?: {
+    data?: {
+      blogInfo?: LofterBlogInfo;
+      postData?: { postView?: LofterPostView };
+    };
+  };
+  answerDetailData?: {
+    blogInfo?: LofterBlogInfo;
+    barrage?: string;
+    answer?: string;
+    images?: LofterImage[];
+  };
+}
+
 export class LofterExtractor extends BaseExtractor {
   name = 'lofter';
 
@@ -18,21 +62,21 @@ export class LofterExtractor extends BaseExtractor {
     return url.replace(/\?(imageView|type=).*$/, '').replace(/\\u002F/g, '/');
   }
 
-  private parseJsonSafely(rawStr: string): any {
+  private parseJsonSafely(rawStr: string): LofterInitData | null {
     const jsonStr = rawStr.replace(/;\s*$/, '').trim();
     try {
-      return JSON.parse(jsonStr);
+      return JSON.parse(jsonStr) as LofterInitData;
     } catch {
       try {
         const quoted = jsonStr.replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":');
-        return JSON.parse(quoted);
+        return JSON.parse(quoted) as LofterInitData;
       } catch {
         return null;
       }
     }
   }
 
-  private extractInitializeData(html: string): any {
+  private extractInitializeData(html: string): LofterInitData | null {
     const idx = html.indexOf('window.__initialize_data__');
     if (idx !== -1) {
       const start = html.indexOf('{', idx);
@@ -59,24 +103,17 @@ export class LofterExtractor extends BaseExtractor {
       // 1. Check standard blog post details: postData.data
       const postBundle = initData.postData?.data;
       if (postBundle) {
-        const blogInfo = postBundle.blogInfo || {};
+        const blogInfo: LofterBlogInfo = postBundle.blogInfo || {};
         const author = blogInfo.blogNickName || blogInfo.blogName || '';
-        const postView = postBundle.postData?.postView || {};
+        const postView: LofterPostView = postBundle.postData?.postView || {};
 
         let title = postView.title?.trim() || postView.digest?.trim() || '';
         if (title) {
           title = title.replace(/<[^>]+>/g, '').trim();
         }
 
-        let publishTime: string | undefined;
-        const rawTime = postView.publishTime || postView.noticeTime;
-        if (rawTime) {
-          const timestamp = typeof rawTime === 'number' ? rawTime : parseInt(rawTime, 10);
-          if (!isNaN(timestamp)) {
-            const ms = timestamp < 1e11 ? timestamp * 1000 : timestamp;
-            publishTime = new Date(ms).toISOString();
-          }
-        }
+        // Unix seconds or ms; normalized to ISO 8601 by the dispatcher
+        const publishTime = postView.publishTime || postView.noticeTime;
 
         const htmlParts: string[] = [];
         let coverImage: string | undefined;
@@ -135,14 +172,13 @@ export class LofterExtractor extends BaseExtractor {
           publish_time: publishTime,
           cover_image: coverImage,
           content_html: htmlParts.join('\n'),
-          platform: '网易LOFTER',
         };
       }
 
       // 2. Compatible with Q&A / Answer detail: answerDetailData
       if (initData.answerDetailData) {
         const ans = initData.answerDetailData;
-        const blogInfo = ans.blogInfo || {};
+        const blogInfo: LofterBlogInfo = ans.blogInfo || {};
         const author = blogInfo.blogNickName || blogInfo.blogName || '';
         const title = (ans.barrage || ans.answer || '网易LOFTER问答').replace(/<[^>]+>/g, '').trim();
 
@@ -162,7 +198,6 @@ export class LofterExtractor extends BaseExtractor {
           title,
           author,
           content_html: htmlParts.join('\n'),
-          platform: '网易LOFTER',
         };
       }
     }
@@ -190,7 +225,6 @@ export class LofterExtractor extends BaseExtractor {
       author,
       cover_image: coverImage,
       content_html: contentDom.html() || '',
-      platform: '网易LOFTER',
     };
   }
 }

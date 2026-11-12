@@ -10,6 +10,19 @@ interface PlatformItem {
   description: string;
 }
 
+interface ExtractApiResponse {
+  code: number;
+  message?: string;
+  data?: {
+    title?: string;
+    author?: string;
+    publish_time?: string;
+    word_count?: number;
+    images?: unknown[];
+    markdown?: string;
+  };
+}
+
 interface TestResult {
   platform: string;
   category: string;
@@ -50,13 +63,14 @@ async function runPlatformBenchmark() {
     try {
       const res = await got.post(apiUrl, {
         json: { url: item.url, upload_images: false, format: 'both' },
+        headers: process.env.API_KEY ? { 'x-api-key': process.env.API_KEY } : {},
         timeout: { request: 15000 },
         retry: { limit: 1 },
         throwHttpErrors: false,
       });
 
       const duration = Date.now() - start;
-      const json: any = JSON.parse(res.body);
+      const json = JSON.parse(res.body) as ExtractApiResponse;
 
       if (res.statusCode === 200 && json.code === 200 && json.data) {
         const title = json.data.title || '';
@@ -116,16 +130,17 @@ async function runPlatformBenchmark() {
           error: errMsg,
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       const duration = Date.now() - start;
-      console.log(`❌ 超时/异常 (${duration}ms) | ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(`❌ 超时/异常 (${duration}ms) | ${message}`);
       results.push({
         platform: item.platform,
         category: item.category,
         url: item.url,
         success: false,
         durationMs: duration,
-        error: err.message,
+        error: message,
       });
     }
   }

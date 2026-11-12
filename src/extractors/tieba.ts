@@ -1,8 +1,31 @@
-import { gotScraping } from 'got-scraping';
+import { httpJson } from '../utils/http.js';
+import { logger, errorMessage } from '../utils/logger.js';
 import { BaseExtractor } from './base.js';
 import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
-import { config } from '../config.js';
+
+interface TiebaContentItem {
+  type?: number;
+  text?: string;
+  link?: string;
+  src?: string;
+  origin_src?: string;
+}
+
+interface TiebaPost {
+  title?: string;
+  time?: number;
+  author?: { show_nickname?: string; name_show?: string; name?: string };
+  content?: TiebaContentItem[];
+}
+
+interface TiebaPbResponse {
+  data?: {
+    post_list?: TiebaPost[];
+    forum?: { name?: string };
+    thread?: { title?: string };
+  };
+}
 
 export class TiebaExtractor extends BaseExtractor {
   name = 'tieba';
@@ -25,7 +48,6 @@ export class TiebaExtractor extends BaseExtractor {
       return {
         title: '百度贴吧帖子',
         content_html: '',
-        platform: '百度贴吧',
       };
     }
 
@@ -33,13 +55,13 @@ export class TiebaExtractor extends BaseExtractor {
       // Baidu Tieba PC pages block scrapers with "百度安全验证" (403 CAPTCHA shield).
       // However, Tieba's mobile JSON endpoint (getPbData) returns 200 with complete thread data!
       const apiUrl = `https://tieba.baidu.com/mg/p/getPbData?kz=${kz}`;
-      const response: any = await gotScraping(apiUrl, {
+      const response = await httpJson<TiebaPbResponse>({
+        url: apiUrl,
         headers: {
           'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
           'Referer': `https://tieba.baidu.com/p/${kz}`,
         },
-        timeout: { request: config.requestTimeout },
-      }).json();
+      });
 
       const data = response?.data;
       if (data && data.post_list && data.post_list.length > 0) {
@@ -53,15 +75,8 @@ export class TiebaExtractor extends BaseExtractor {
                        firstPost.author?.name ||
                        '贴吧网友';
 
-        // Format publish time
-        let publishTime: string | undefined;
-        if (firstPost.time) {
-          const date = new Date(firstPost.time * 1000);
-          publishTime = date.toISOString().replace('T', ' ').slice(0, 19);
-        }
-
         // Build rich-text HTML from post elements
-        let htmlParts: string[] = [];
+        const htmlParts: string[] = [];
         let coverImage: string | undefined;
 
         if (Array.isArray(firstPost.content)) {
@@ -94,20 +109,18 @@ export class TiebaExtractor extends BaseExtractor {
         return {
           title,
           author,
-          publish_time: publishTime,
+          publish_time: firstPost.time,
           cover_image: coverImage,
           content_html: contentHtml,
-          platform: 'Baidu Tieba (百度贴吧)',
         };
       }
-    } catch (e: any) {
-      console.warn(`[TiebaExtractor] getPbData API failed: ${e.message}`);
+    } catch (e) {
+      logger.warn({ extractor: 'tieba', url }, `getPbData API failed: ${errorMessage(e)}`);
     }
 
     return {
       title: '百度贴吧帖子',
       content_html: '',
-      platform: 'Baidu Tieba (百度贴吧)',
     };
   }
 }

@@ -1,8 +1,25 @@
-import { gotScraping } from 'got-scraping';
+import { httpText } from '../utils/http.js';
+import { logger, errorMessage } from '../utils/logger.js';
 import { BaseExtractor } from './base.js';
 import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
-import { config } from '../config.js';
+
+interface Kr36Data {
+  widgetTitle?: string;
+  title?: string;
+  author?: string;
+  user?: { name?: string };
+  widgetContent?: string;
+  content?: string;
+  widgetImage?: string;
+  cover?: string;
+  publishTime?: number | string;
+}
+
+interface Kr36State {
+  article?: { detail?: { data?: Kr36Data } };
+  articleDetail?: { articleDetailData?: { data?: Kr36Data } };
+}
 
 export class Kr36Extractor extends BaseExtractor {
   name = '36kr';
@@ -22,22 +39,21 @@ export class Kr36Extractor extends BaseExtractor {
       ? `https://m.36kr.com/p/${articleId}`
       : url;
 
-    const res = await gotScraping({
+    const body = await httpText({
       url: targetUrl,
       headerGeneratorOptions: {
         devices: ['mobile'],
         browsers: [{ name: 'safari' }],
       },
-      timeout: { request: config.requestTimeout },
     });
 
-    const startIdx = res.body.indexOf('window.initialState=');
+    const startIdx = body.indexOf('window.initialState=');
     if (startIdx !== -1) {
       try {
-        const sub = res.body.substring(startIdx + 'window.initialState='.length);
+        const sub = body.substring(startIdx + 'window.initialState='.length);
         const endIdx = sub.indexOf('</script>');
         const jsonStr = sub.substring(0, endIdx).replace(/;$/, '').trim();
-        const state = JSON.parse(jsonStr);
+        const state = JSON.parse(jsonStr) as Kr36State;
 
         const data = state.article?.detail?.data || state.articleDetail?.articleDetailData?.data;
         if (data) {
@@ -46,30 +62,22 @@ export class Kr36Extractor extends BaseExtractor {
           const contentHtml = data.widgetContent || data.content || '';
           const coverImage = data.widgetImage || data.cover;
 
-          let publishTime: string | undefined;
-          if (data.publishTime) {
-            const ts = Number(data.publishTime);
-            publishTime = !isNaN(ts) ? new Date(ts).toISOString() : String(data.publishTime);
-          }
-
           return {
             title,
             author,
-            publish_time: publishTime,
+            publish_time: data.publishTime,
             cover_image: coverImage,
             content_html: contentHtml,
-            platform: '36氪',
           };
         }
-      } catch (e: any) {
-        console.warn(`[36krExtractor] Failed to parse initialState: ${e.message}`);
+      } catch (e) {
+        logger.warn({ extractor: '36kr', url }, `Failed to parse initialState: ${errorMessage(e)}`);
       }
     }
 
     return {
       title: '36氪文章',
       content_html: '',
-      platform: '36氪',
     };
   }
 }

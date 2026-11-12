@@ -1,8 +1,19 @@
-import { gotScraping } from 'got-scraping';
+import { httpJson } from '../utils/http.js';
+import { logger, errorMessage } from '../utils/logger.js';
 import { BaseExtractor } from './base.js';
 import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
-import { config } from '../config.js';
+
+interface DoubanNote {
+  title?: string;
+  author?: { name?: string };
+  cover_url?: string;
+  photos?: Array<{ image?: { normal?: { url?: string } } }>;
+  content?: string;
+  create_time?: string;
+  pub_date?: string;
+  update_time?: string;
+}
 
 export class DoubanExtractor extends BaseExtractor {
   name = 'douban';
@@ -22,18 +33,17 @@ export class DoubanExtractor extends BaseExtractor {
       return {
         title: '豆瓣日记',
         content_html: '',
-        platform: '豆瓣日记',
       };
     }
 
     try {
       const apiUrl = `https://m.douban.com/rexxar/api/v2/note/${noteId}`;
-      const res: any = await gotScraping(apiUrl, {
+      const res = await httpJson<DoubanNote>({
+        url: apiUrl,
         headers: {
           'Referer': `https://m.douban.com/note/${noteId}/`,
         },
-        timeout: { request: config.requestTimeout },
-      }).json();
+      });
 
       if (res && res.title) {
         const title = res.title;
@@ -48,17 +58,15 @@ export class DoubanExtractor extends BaseExtractor {
           publish_time: publishTime,
           cover_image: coverImage,
           content_html: contentHtml,
-          platform: '豆瓣日记',
         };
       }
-    } catch (e: any) {
-      console.warn(`[DoubanExtractor] Rexxar API failed: ${e.message}`);
+    } catch (e) {
+      logger.warn({ extractor: 'douban', url }, `Rexxar API failed: ${errorMessage(e)}`);
     }
 
     return {
       title: '豆瓣日记',
       content_html: '',
-      platform: '豆瓣日记',
     };
   }
 }

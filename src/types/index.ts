@@ -48,8 +48,14 @@ export interface ExtractedImage {
 export interface ExtractedArticle {
   title: string;
   author?: string;
+  /** ISO 8601 (UTC), e.g. 2026-10-14T10:50:15.000Z. Absent when the source time could not be parsed. */
   publish_time?: string;
+  /** The publish time exactly as found on the page, for debugging / custom parsing */
+  publish_time_raw?: string;
   source_url: string;
+  /** Stable machine-readable platform id, e.g. `wechat`, `zhihu`, `web`. Safe to branch on. */
+  platform_id: string;
+  /** Human-readable platform name, e.g. `微信公众号`. For display only. */
   platform: string;
   cover_image?: string;
   images: ExtractedImage[];
@@ -88,9 +94,25 @@ export interface IExtractor {
 export interface RawExtractedArticle {
   title: string;
   author?: string;
-  publish_time?: string;
+  /** Any format: ISO string, wall-clock string, unix seconds/ms. Normalized by the dispatcher. */
+  publish_time?: string | number;
   cover_image?: string;
   content_html: string;
+  /** Only needed when one extractor serves several platforms (the general extractor). Defaults to extractor.name. */
+  platform_id?: string;
+}
+
+/**
+ * Extractor output after platform and publish-time normalization
+ */
+export interface NormalizedArticle {
+  title: string;
+  author?: string;
+  publish_time?: string;
+  publish_time_raw?: string;
+  cover_image?: string;
+  content_html: string;
+  platform_id: string;
   platform: string;
 }
 

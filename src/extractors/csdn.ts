@@ -54,7 +54,6 @@ export class CSDNExtractor extends BaseExtractor {
       author,
       publish_time: publishTime,
       content_html: contentHtml,
-      platform: 'CSDN',
     };
   }
 }

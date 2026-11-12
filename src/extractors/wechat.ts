@@ -113,7 +113,6 @@ export class WechatExtractor extends BaseExtractor {
           publish_time: publishTime,
           cover_image: coverImage || galleryImages[0],
           content_html: contentHtml,
-          platform: 'WeChat Official Account (图文/图片消息)',
         };
       }
     }
@@ -124,7 +123,6 @@ export class WechatExtractor extends BaseExtractor {
       publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
-      platform: 'WeChat Official Account',
     };
   }
 }

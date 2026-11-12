@@ -1,9 +1,9 @@
-import { gotScraping } from 'got-scraping';
+import { httpText } from '../utils/http.js';
+import { logger, errorMessage } from '../utils/logger.js';
 import * as cheerio from 'cheerio';
 import { BaseExtractor } from './base.js';
 import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
-import { config } from '../config.js';
 
 export class OSChinaExtractor extends BaseExtractor {
   name = 'oschina';
@@ -23,8 +23,8 @@ export class OSChinaExtractor extends BaseExtractor {
       const newsId = newsMatch[1];
       try {
         const apiUrl = `https://www.oschina.net/action/api/news_detail?id=${newsId}`;
-        const res = await gotScraping(apiUrl, { timeout: { request: config.requestTimeout } });
-        const $ = cheerio.load(res.body, { xmlMode: true });
+        const body = await httpText({ url: apiUrl });
+        const $ = cheerio.load(body, { xmlMode: true });
         const title = $('news title').text().trim();
         const author = $('news author').text().trim() || '开源中国';
         const publishTime = $('news pubDate').text().trim();
@@ -35,10 +35,11 @@ export class OSChinaExtractor extends BaseExtractor {
             author,
             publish_time: publishTime,
             content_html: contentHtml,
-            platform: '开源中国 (OSChina)',
           };
         }
-      } catch {}
+      } catch (e) {
+        logger.warn({ extractor: 'oschina', url }, `API request failed: ${errorMessage(e)}`);
+      }
     }
 
     // 2. Try OSChina Blog API if it matches blog pattern
@@ -46,8 +47,8 @@ export class OSChinaExtractor extends BaseExtractor {
       const blogId = blogMatch[1];
       try {
         const apiUrl = `https://www.oschina.net/action/api/blog_detail?id=${blogId}`;
-        const res = await gotScraping(apiUrl, { timeout: { request: config.requestTimeout } });
-        const $ = cheerio.load(res.body, { xmlMode: true });
+        const body = await httpText({ url: apiUrl });
+        const $ = cheerio.load(body, { xmlMode: true });
         const title = $('blog title').text().trim();
         const author = $('blog author').text().trim() || '开源中国博主';
         const publishTime = $('blog pubDate').text().trim();
@@ -58,16 +59,16 @@ export class OSChinaExtractor extends BaseExtractor {
             author,
             publish_time: publishTime,
             content_html: contentHtml,
-            platform: '开源中国 (OSChina)',
           };
         }
-      } catch {}
+      } catch (e) {
+        logger.warn({ extractor: 'oschina', url }, `API request failed: ${errorMessage(e)}`);
+      }
     }
 
     return {
       title: '开源中国文章',
       content_html: '',
-      platform: '开源中国 (OSChina)',
     };
   }
 }

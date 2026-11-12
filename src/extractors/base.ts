@@ -1,6 +1,9 @@
 import { IExtractor, RawExtractedArticle } from '../types/index.js';
 import * as cheerio from 'cheerio';
 
+/** cheerio's node type (from domhandler), derived without depending on domhandler directly */
+export type AnyNode = Exclude<Parameters<typeof cheerio.load>[0], string | Buffer | unknown[]>;
+
 export abstract class BaseExtractor implements IExtractor {
   abstract name: string;
   abstract canHandle(url: string): boolean;
@@ -9,7 +12,7 @@ export abstract class BaseExtractor implements IExtractor {
   /**
    * Helper to clean common noisy DOM elements before content extraction
    */
-  protected removeNoiseElements($: cheerio.CheerioAPI, root: cheerio.Cheerio<any>) {
+  protected removeNoiseElements(_$: cheerio.CheerioAPI, root: cheerio.Cheerio<AnyNode>) {
     root.find('script, style, noscript, svg, button, form, iframe[src=""], [style*="display: none"], [style*="display:none"]').remove();
   }
 

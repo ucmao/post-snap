@@ -1,10 +1,11 @@
-import got from 'got';
+import got, { type Response } from 'got';
 import * as cheerio from 'cheerio';
 import { IStorageProvider, ExtractedImage } from '../types/index.js';
 import { config } from '../config.js';
 import { assertSafeUrl, guardRedirect, safeLookup } from '../utils/url-guard.js';
 import { sniffImageType } from '../utils/image-type.js';
 import { hostMatches } from '../utils/url-match.js';
+import { logger, errorMessage } from '../utils/logger.js';
 
 /**
  * Download an image with SSRF protection, a hard streaming size cap and
@@ -26,12 +27,12 @@ async function fetchImageSafely(imageUrl: string, referer: string): Promise<{ bu
         'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
       },
       timeout: { request: config.requestTimeout },
-      dnsLookup: safeLookup as any,
+      dnsLookup: safeLookup,
       maxRedirects: 5,
-      hooks: { beforeRedirect: [guardRedirect as any] },
+      hooks: { beforeRedirect: [guardRedirect] },
     });
 
-    stream.on('response', (res: any) => {
+    stream.on('response', (res: Response) => {
       const contentType = String(res.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
       // Reject obvious non-images early (HTML error pages, SVG, JSON, ...)
       if (contentType && !contentType.startsWith('image/') && contentType !== 'application/octet-stream' && contentType !== 'binary/octet-stream') {
@@ -62,7 +63,7 @@ async function fetchImageSafely(imageUrl: string, referer: string): Promise<{ bu
 
   const mimeType = sniffImageType(buffer);
   if (!mimeType) {
-    console.warn(`[ImageProcessor] Rejected non-image content: ${imageUrl}`);
+    logger.warn({ imageUrl }, 'Rejected non-image content');
     return null;
   }
   return { buffer, mimeType };
@@ -126,8 +127,8 @@ export async function processAndRehostImages(
       const { buffer, mimeType } = downloaded;
       const rehostedUrl = await storageProvider.save(buffer, mimeType);
       return rehostedUrl;
-    } catch (err: any) {
-      console.warn(`[ImageProcessor] Failed to download/save image: ${imageUrl}. Reason: ${err.message}`);
+    } catch (err) {
+      logger.warn({ imageUrl }, `Failed to download/save image: ${errorMessage(err)}`);
       return null;
     }
   }

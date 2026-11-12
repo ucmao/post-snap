@@ -57,7 +57,6 @@ export class XueqiuExtractor extends BaseExtractor {
       publish_time: publishTime,
       cover_image: coverImage,
       content_html: $content.html() || '',
-      platform: '雪球',
     };
   }
 }

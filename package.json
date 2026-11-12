@@ -8,7 +8,9 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "test": "tsx test/extract.test.ts && tsx test/security.test.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "node --import tsx --test test/*.test.ts",
+    "fixtures:record": "tsx scripts/record-fixtures.ts",
     "test:platforms": "tsx test/test-platforms.ts"
   },
   "keywords": [
@@ -32,19 +34,20 @@
     "got": "^14.4.5",
     "got-scraping": "^4.2.2",
     "jsdom": "^26.0.0",
-    "mime-types": "^2.1.35",
     "sanitize-html": "^2.14.0",
     "turndown": "^7.2.0",
     "turndown-plugin-gfm": "^1.0.2"
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
-    "@types/mime-types": "^2.1.4",
     "@types/node": "^22.13.4",
     "@types/sanitize-html": "^2.13.0",
     "@types/turndown": "^5.0.5",
     "pino-pretty": "^13.2.0",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20.6.0"
   }
 }

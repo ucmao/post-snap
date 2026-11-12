@@ -1,9 +1,8 @@
 import * as cheerio from 'cheerio';
-import got from 'got';
+import { httpText } from '../utils/http.js';
 import { BaseExtractor } from './base.js';
 import { hostMatches, parseUrl } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
-import { config } from '../config.js';
 
 export class ToutiaoExtractor extends BaseExtractor {
   name = 'toutiao';
@@ -26,17 +25,16 @@ export class ToutiaoExtractor extends BaseExtractor {
       ? `https://m.toutiao.com/article/${articleId}/`
       : url;
 
-    const response = await got(targetUrl, {
+    const html = await httpText({
+      url: targetUrl,
+      client: 'plain',
       headers: {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       },
-      timeout: { request: config.requestTimeout },
-      followRedirect: true,
     });
 
-    const html = response.body;
     const $ = cheerio.load(html);
 
     const title = $('h1').first().text().trim() ||
@@ -81,7 +79,6 @@ export class ToutiaoExtractor extends BaseExtractor {
       publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
-      platform: '今日头条',
     };
   }
 }

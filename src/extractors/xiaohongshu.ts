@@ -3,6 +3,35 @@ import { BaseExtractor } from './base.js';
 import { hostMatches } from '../utils/url-match.js';
 import { RawExtractedArticle } from '../types/index.js';
 
+interface XhsImage {
+  fileId?: string;
+  urlDefault?: string;
+  url?: string;
+  infoList?: Array<{ url?: string }>;
+}
+
+interface XhsNote {
+  title?: string;
+  desc?: string;
+  user?: { nickname?: string; nickName?: string };
+  time?: number | string;
+  lastUpdateTime?: number | string;
+  imageList?: XhsImage[];
+  cover?: XhsImage | string;
+}
+
+interface XhsInitialState {
+  note?: {
+    firstNoteId?: string;
+    noteDetailMap?: Record<string, { note?: XhsNote }>;
+    note?: XhsNote;
+  };
+  noteData?: {
+    data?: { noteData?: XhsNote };
+    note?: XhsNote;
+  };
+}
+
 export class XiaohongshuExtractor extends BaseExtractor {
   name = 'xiaohongshu';
 
@@ -13,7 +42,7 @@ export class XiaohongshuExtractor extends BaseExtractor {
   /**
    * Clean and transform Xiaohongshu image object/url into a high-res, unwatermarked JPG URL.
    */
-  private cleanImageUrl(imgObjOrUrl: any): string | undefined {
+  private cleanImageUrl(imgObjOrUrl: XhsImage | string | undefined): string | undefined {
     if (!imgObjOrUrl) return undefined;
 
     let fileId: string | undefined;
@@ -45,20 +74,20 @@ export class XiaohongshuExtractor extends BaseExtractor {
     return normalizedUrl.replace(/![^?#]*/, '');
   }
 
-  private cleanAndParseJson(rawJsonStr: string): any {
+  private cleanAndParseJson(rawJsonStr: string): XhsNote | null {
     let jsonStr = rawJsonStr.trim().replace(/;\s*$/, '');
     jsonStr = jsonStr.replace(/\bundefined\b/g, 'null');
     jsonStr = jsonStr.replace(/new\s+Map\s*\([^)]*\)/g, '{}');
     jsonStr = jsonStr.replace(/new\s+Set\s*\([^)]*\)/g, '[]');
     jsonStr = jsonStr.replace(/new\s+Date\s*\([^)]*\)/g, 'null');
 
-    let fullData: any = null;
+    let fullData: XhsInitialState | null = null;
     try {
-      fullData = JSON.parse(jsonStr);
+      fullData = JSON.parse(jsonStr) as XhsInitialState;
     } catch {
       try {
         const quoted = jsonStr.replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":');
-        fullData = JSON.parse(quoted);
+        fullData = JSON.parse(quoted) as XhsInitialState;
       } catch {
         return null;
       }
@@ -84,7 +113,7 @@ export class XiaohongshuExtractor extends BaseExtractor {
     return fullData?.noteData?.note || fullData?.note?.note || null;
   }
 
-  private extractNoteFromHtml(html: string): any {
+  private extractNoteFromHtml(html: string): XhsNote | null {
     const idx = html.indexOf('window.__INITIAL_STATE__');
     if (idx !== -1) {
       const start = html.indexOf('{', idx);
@@ -113,16 +142,8 @@ export class XiaohongshuExtractor extends BaseExtractor {
       const user = note.user || {};
       const author = user.nickname || user.nickName || '';
       
-      let publishTime: string | undefined;
-      const rawTime = note.time || note.lastUpdateTime;
-      if (rawTime) {
-        const timestamp = typeof rawTime === 'number' ? rawTime : parseInt(rawTime, 10);
-        if (!isNaN(timestamp)) {
-          // If in seconds (10 digits), convert to ms
-          const ms = timestamp < 1e11 ? timestamp * 1000 : timestamp;
-          publishTime = new Date(ms).toISOString();
-        }
-      }
+      // Unix seconds or ms; normalized to ISO 8601 by the dispatcher
+      const publishTime = note.time || note.lastUpdateTime;
 
       // Extract high-res images
       const images: string[] = [];
@@ -163,7 +184,6 @@ export class XiaohongshuExtractor extends BaseExtractor {
         publish_time: publishTime,
         cover_image: coverImage,
         content_html: htmlParts.join('\n'),
-        platform: '小红书',
       };
     }
 
@@ -194,7 +214,6 @@ export class XiaohongshuExtractor extends BaseExtractor {
       author,
       cover_image: coverImage,
       content_html: htmlParts.join('\n'),
-      platform: '小红书',
     };
   }
 }

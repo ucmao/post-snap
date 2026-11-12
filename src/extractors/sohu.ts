@@ -96,7 +96,6 @@ export class SohuExtractor extends BaseExtractor {
       publish_time: publishTime,
       cover_image: coverImage,
       content_html: $content.html() || '',
-      platform: '搜狐号',
     };
   }
 }

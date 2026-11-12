@@ -71,7 +71,6 @@ export class ZhihuExtractor extends BaseExtractor {
       publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
-      platform: 'Zhihu',
     };
   }
 }

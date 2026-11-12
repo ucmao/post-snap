@@ -1,6 +1,13 @@
 import dns from 'node:dns';
 import net from 'node:net';
+import type { BeforeRedirectHook } from 'got';
 import { config } from '../config.js';
+
+/** Set by the HTTP layer while replaying recorded fixtures (no network / DNS involved). */
+let skipDnsCheck = false;
+export function setSkipDnsCheck(value: boolean): void {
+  skipDnsCheck = value;
+}
 
 /**
  * Thrown when a URL is rejected by the SSRF guard (bad scheme, private address, ...).
@@ -25,7 +32,9 @@ for (const [addr, prefix] of [
   ['192.0.0.0', 24],
   ['192.0.2.0', 24],
   ['192.168.0.0', 16],
-  ['198.18.0.0', 15],
+  // Note: 198.18.0.0/15 (RFC 2544 benchmark) is intentionally NOT blocked here
+  // because transparent proxies and dev VPNs (Clash, Surge, Sing-box TUN Fake-IP)
+  // map external domains to 198.18.0.0/15. It is not an internal LAN range.
   ['198.51.100.0', 24],
   ['203.0.113.0', 24],
   ['224.0.0.0', 4],
@@ -74,7 +83,7 @@ export async function assertSafeUrl(rawUrl: string): Promise<URL> {
     throw new UnsafeUrlError(`Unsupported protocol: ${parsed.protocol}`);
   }
 
-  if (config.allowPrivateNetwork) return parsed;
+  if (config.allowPrivateNetwork || skipDnsCheck) return parsed;
 
   const host = parsed.hostname.replace(/^\[|\]$/g, '');
   if (!host) throw new UnsafeUrlError('URL has no host');
@@ -98,33 +107,34 @@ export async function assertSafeUrl(rawUrl: string): Promise<URL> {
 /**
  * got `beforeRedirect` hook: re-validate every redirect target.
  */
-export async function guardRedirect(options: { url?: URL | string }): Promise<void> {
+export const guardRedirect: BeforeRedirectHook = async (options) => {
   if (options.url) await assertSafeUrl(options.url.toString());
-}
+};
 
 /**
  * Drop-in replacement for dns.lookup that refuses private addresses at connect time.
  * Closes the DNS-rebinding gap between assertSafeUrl() and the real connection.
  */
-export function safeLookup(hostname: string, options: any, callback?: any): void {
-  if (typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-  const opts = typeof options === 'number' ? { family: options } : { ...(options || {}) };
-  const wantAll = Boolean(opts.all);
+type LookupCallback = (err: NodeJS.ErrnoException | null, address: string | dns.LookupAddress[], family?: number) => void;
 
-  dns.lookup(hostname, { ...opts, all: true }, (err, addresses) => {
-    if (err) return callback(err);
-    const list = addresses as unknown as dns.LookupAddress[];
-    if (!config.allowPrivateNetwork && list.some(a => isPrivateAddress(a.address))) {
-      const e: any = new UnsafeUrlError(`Access to private or reserved address is not allowed: ${hostname}`);
+export const safeLookup: net.LookupFunction = (hostname, options, callback) => {
+  const cb = callback as unknown as LookupCallback;
+  const wantAll = Boolean((options as dns.LookupAllOptions).all);
+
+  dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
+    if (err) return cb(err, []);
+    if (!config.allowPrivateNetwork && addresses.some(a => isPrivateAddress(a.address))) {
+      const e: NodeJS.ErrnoException = new UnsafeUrlError(`Access to private or reserved address is not allowed: ${hostname}`);
       e.code = 'EPRIVATEADDR';
-      return callback(e);
+      return cb(e, []);
     }
-    if (wantAll) return callback(null, list);
-    const first = list[0];
-    if (!first) return callback(Object.assign(new Error(`ENOTFOUND ${hostname}`), { code: 'ENOTFOUND' }));
-    return callback(null, first.address, first.family);
+    if (wantAll) return cb(null, addresses);
+    const first = addresses[0];
+    if (!first) {
+      const e: NodeJS.ErrnoException = new Error(`ENOTFOUND ${hostname}`);
+      e.code = 'ENOTFOUND';
+      return cb(e, []);
+    }
+    return cb(null, first.address, first.family);
   });
-}
+};

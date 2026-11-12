@@ -57,7 +57,6 @@ export class JuejinExtractor extends BaseExtractor {
       publish_time: publishTime,
       cover_image: coverImage,
       content_html: contentHtml,
-      platform: '稀土掘金',
     };
   }
 }
